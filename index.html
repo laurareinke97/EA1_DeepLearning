@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>ml5 Image Classification</title>
+
+    <!-- ml5 -->
+    <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .left, .right {
+            flex: 1;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 10px;
+        }
+
+        .correct {
+            border: 3px solid green;
+        }
+
+        .wrong {
+            border: 3px solid red;
+        }
+
+        .upload-area {
+            border: 2px dashed #aaa;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        canvas {
+            max-height: 250px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Bildklassifikation mit ml5</h1>
+
+<h2>Beispiele</h2>
+<div id="examples"></div>
+
+<h2>Eigenes Bild testen</h2>
+
+<div class="container">
+    <div class="left">
+        <div class="upload-area" id="dropArea">
+            Bild hier hineinziehen oder klicken
+            <input type="file" id="fileInput" hidden>
+        </div>
+
+        <img id="userImage" />
+
+        <button onclick="classifyUserImage()">Classify</button>
+    </div>
+
+    <div class="right">
+        <canvas id="userChart"></canvas>
+    </div>
+</div>
+
+<h2>Diskussion</h2>
+<p>
+    Hier deine Analyse einfügen (max. 10 Sätze).
+</p>
+
+<h2>Dokumentation</h2>
+<p><b>Technisch:</b> ml5.js für Klassifikation, Chart.js für Visualisierung.</p>
+<p><b>Fachlich:</b> Implementierungsansatz beschreiben.</p>
+
+<script>
+    let classifier;
+    let modelReady = false;
+    let userChart;
+
+    const userImage = document.getElementById("userImage");
+
+    // Beispielbilder (im /images Ordner haben)
+/*    const exampleImages = [
+        { src: "images/cat1.jpg", correct: true },
+        { src: "images/dog1.jpg", correct: true },
+        { src: "images/car1.jpg", correct: true },
+        { src: "images/weird1.jpg", correct: false },
+        { src: "images/weird2.jpg", correct: false },
+        { src: "images/weird3.jpg", correct: false }
+    ];
+
+ */
+
+    async function init() {
+        classifier = await ml5.imageClassifier('MobileNet');
+        console.log("Model geladen");
+        modelReady = true;
+        loadExamples();
+    }
+
+    init();
+
+    // Beispielbilder laden und klassifizieren
+    function loadExamples() {
+        const container = document.getElementById("examples");
+
+        exampleImages.forEach(imgData => {
+            const div = document.createElement("div");
+            div.className = "container";
+
+            const left = document.createElement("div");
+            left.className = "left";
+
+            const right = document.createElement("div");
+            right.className = "right";
+
+            const img = document.createElement("img");
+            img.src = imgData.src;
+            img.className = imgData.correct ? "correct" : "wrong";
+
+            const canvas = document.createElement("canvas");
+
+            left.appendChild(img);
+            right.appendChild(canvas);
+            div.appendChild(left);
+            div.appendChild(right);
+            container.appendChild(div);
+
+            img.onload = () => classifyExample(img, canvas);
+        });
+    }
+
+    async function classifyExample(img, canvas) {
+        const results = await classifier.classify(img);
+
+        const labels = results.slice(0, 3).map(r => r.label);
+        const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
+
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Confidence (%)',
+                    data: data
+                }]
+            }
+        });
+    }
+
+    // Upload Handling
+    const dropArea = document.getElementById("dropArea");
+    const fileInput = document.getElementById("fileInput");
+
+    dropArea.onclick = () => fileInput.click();
+
+    fileInput.onchange = e => {
+        const file = e.target.files[0];
+        loadUserImage(file);
+    };
+
+    dropArea.ondragover = e => e.preventDefault();
+
+    dropArea.ondrop = e => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        loadUserImage(file);
+    };
+
+    function loadUserImage(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            userImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Klassifikation User Bild
+    async function classifyUserImage() {
+        if (!modelReady) {
+            alert("Modell lädt noch...");
+            return;
+        }
+
+        if (!userImage.src) {
+            alert("Bitte zuerst ein Bild laden!");
+            return;
+        }
+
+        const results = await classifier.classify(userImage);
+        console.log(results);
+
+        const labels = results.slice(0, 3).map(r => r.label);
+        const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
+
+        if (userChart) userChart.destroy();
+
+        userChart = new Chart(document.getElementById("userChart"), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Confidence (%)',
+                    data: data
+                }]
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
