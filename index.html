@@ -10,59 +10,87 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Tailwind CSS -->
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2d6844',
+                        soft: '#f0fdf4'
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 
 <body class="bg-gray-100 text-gray-800 p-6">
 
-<h1 class="text-3xl font-bold text-center mb-8">Bildklassifikation mit ml5</h1>
+<h1 class="text-3xl font-bold text-center mb-8 text-primary">
+    Bildklassifikation mit ml5
+</h1>
 
+<!-- ACCORDION -->
 <h2 class="text-2xl font-semibold mb-4 text-center">Beispiele</h2>
-<div id="examples" class="space-y-6"></div>
 
+<div class="max-w-5xl mx-auto space-y-4">
+
+    <!-- CORRECT -->
+    <div class="bg-white rounded-xl shadow">
+        <button onclick="toggleSection('correctSection')"
+                class="w-full text-left p-4 font-semibold text-primary flex justify-between">
+            ✔ Korrekte Klassifikationen
+            <span>▼</span>
+        </button>
+        <div id="correctSection" class="p-4 space-y-4 hidden"></div>
+    </div>
+
+    <!-- WRONG -->
+    <div class="bg-white rounded-xl shadow">
+        <button onclick="toggleSection('wrongSection')"
+                class="w-full text-left p-4 font-semibold text-red-600 flex justify-between">
+            ✘ Falsche Klassifikationen
+            <span>▼</span>
+        </button>
+        <div id="wrongSection" class="p-4 space-y-4 hidden"></div>
+    </div>
+
+</div>
+
+<!-- USER SECTION -->
 <h2 class="text-2xl font-semibold mt-10 mb-4 text-center">Eigenes Bild testen</h2>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl shadow">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl shadow max-w-5xl mx-auto">
 
-    <!-- LEFT -->
     <div>
-        <div id="dropArea" class="border-2 border-dashed border-gray-300 p-6 text-center rounded-xl cursor-pointer hover:bg-gray-50 transition">
-            <p class="text-gray-500">Bild hier hineinziehen oder klicken</p>
+        <div id="dropArea" class="border-2 border-dashed border-gray-300 p-6 text-center rounded-xl cursor-pointer hover:bg-soft transition">
+            Bild hier hineinziehen oder klicken
             <input type="file" id="fileInput" hidden>
         </div>
 
         <img id="userImage" class="mt-4 rounded-xl hidden"/>
 
         <div class="flex gap-2 mt-4">
-            <button onclick="classifyUserImage()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl">
+            <button onclick="classifyUserImage()"
+                    class="bg-primary hover:bg-green-700 text-white px-4 py-2 rounded-xl">
                 Classify
             </button>
 
-            <button onclick="removeImage()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl hidden" id="removeBtn">
+            <button onclick="removeImage()"
+                    class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl hidden"
+                    id="removeBtn">
                 Bild löschen
             </button>
         </div>
     </div>
 
-    <!-- RIGHT -->
     <div>
         <canvas id="userChart"></canvas>
     </div>
 </div>
-
-<h2 class="text-2xl font-semibold mt-10 mb-2 text-center">Diskussion</h2>
-<p class="max-w-3xl mx-auto text-center text-gray-600">
-    Das Modell erkennt klare, typische Objekte wie Tiere oder Autos meist korrekt.
-    Schwierigkeiten treten bei ungewöhnlichen Perspektiven oder verfremdeten Bildern auf.
-    Unscharfe oder abgeschnittene Bilder führen häufiger zu falschen Klassifikationen.
-    Auch wenn mehrere Objekte im Bild sind, kann das Modell verwirrt werden.
-    Insgesamt zeigt sich, dass das Modell stark von Trainingsdaten abhängt.
-</p>
-
-<h2 class="text-2xl font-semibold mt-10 mb-2 text-center">Dokumentation</h2>
-<p class="text-center"><b>Technisch:</b> ml5.js + Chart.js</p>
-<p class="text-center"><b>Fachlich:</b> Klassifikation über MobileNet + Visualisierung</p>
 
 <script>
     let classifier;
@@ -91,33 +119,40 @@
 
     init();
 
+    function toggleSection(id) {
+        const el = document.getElementById(id);
+        el.classList.toggle("hidden");
+    }
+
     function loadExamples() {
-        const container = document.getElementById("examples");
+        const correctContainer = document.getElementById("correctSection");
+        const wrongContainer = document.getElementById("wrongSection");
 
         exampleImages.forEach(imgData => {
             const wrapper = document.createElement("div");
-            wrapper.className = "grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded-2xl shadow";
+            wrapper.className = "grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl";
 
             const left = document.createElement("div");
             const right = document.createElement("div");
 
-            const label = document.createElement("p");
-            label.textContent = imgData.correct ? "✔ korrekt" : "✘ falsch";
-            label.className = imgData.correct ? "text-green-600 font-bold mb-2" : "text-red-600 font-bold mb-2";
-
             const img = document.createElement("img");
             img.src = imgData.src;
-            img.className = "rounded-xl border-4 " + (imgData.correct ? "border-green-500" : "border-red-500");
+            img.className = "rounded-xl border-4 " +
+                (imgData.correct ? "border-green-500" : "border-red-500");
 
             const canvas = document.createElement("canvas");
 
-            left.appendChild(label);
             left.appendChild(img);
             right.appendChild(canvas);
 
             wrapper.appendChild(left);
             wrapper.appendChild(right);
-            container.appendChild(wrapper);
+
+            if (imgData.correct) {
+                correctContainer.appendChild(wrapper);
+            } else {
+                wrongContainer.appendChild(wrapper);
+            }
 
             img.onload = () => classifyExample(img, canvas);
         });
@@ -135,19 +170,17 @@
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: ['#60a5fa', '#34d399', '#fbbf24']
+                    backgroundColor: ['#16a34a', '#86efac', '#bbf7d0']
                 }]
             }
         });
     }
 
-    // Upload Handling
+    // Upload
     dropArea.onclick = () => fileInput.click();
-
     fileInput.onchange = e => loadUserImage(e.target.files[0]);
 
     dropArea.ondragover = e => e.preventDefault();
-
     dropArea.ondrop = e => {
         e.preventDefault();
         loadUserImage(e.dataTransfer.files[0]);
@@ -191,7 +224,7 @@
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: ['#60a5fa', '#34d399', '#fbbf24']
+                    backgroundColor: ['#16a34a', '#86efac', '#bbf7d0']
                 }]
             }
         });
