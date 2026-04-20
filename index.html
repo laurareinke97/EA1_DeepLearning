@@ -10,84 +10,49 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background: #f5f5f5;
-        }
-
-        h1, h2 {
-            text-align: center;
-        }
-
-        .container {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .left, .right {
-            flex: 1;
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-        }
-
-        img {
-            max-width: 100%;
-            border-radius: 10px;
-        }
-
-        .correct {
-            border: 3px solid green;
-        }
-
-        .wrong {
-            border: 3px solid red;
-        }
-
-        .upload-area {
-            border: 2px dashed #aaa;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            margin-bottom: 10px;
-        }
-
-        canvas {
-            max-height: 250px;
-        }
-    </style>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-<h1>Bildklassifikation mit ml5</h1>
+<body class="bg-gray-100 text-gray-800 p-6">
 
-<h2>Beispiele</h2>
-<div id="examples"></div>
+<h1 class="text-3xl font-bold text-center mb-8">Bildklassifikation mit ml5</h1>
 
-<h2>Eigenes Bild testen</h2>
+<h2 class="text-2xl font-semibold mb-4 text-center">Beispiele</h2>
+<div id="examples" class="space-y-6"></div>
 
-<div class="container">
-    <div class="left">
-        <div class="upload-area" id="dropArea">
-            Bild hier hineinziehen oder klicken
+<h2 class="text-2xl font-semibold mt-10 mb-4 text-center">Eigenes Bild testen</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl shadow">
+
+    <!-- LEFT -->
+    <div>
+        <div id="dropArea" class="border-2 border-dashed border-gray-300 p-6 text-center rounded-xl cursor-pointer hover:bg-gray-50 transition">
+            <p class="text-gray-500">Bild hier hineinziehen oder klicken</p>
             <input type="file" id="fileInput" hidden>
         </div>
 
-        <img id="userImage" />
+        <img id="userImage" class="mt-4 rounded-xl hidden"/>
 
-        <button onclick="classifyUserImage()">Classify</button>
+        <div class="flex gap-2 mt-4">
+            <button onclick="classifyUserImage()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl">
+                Classify
+            </button>
+
+            <button onclick="removeImage()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl hidden" id="removeBtn">
+                Bild löschen
+            </button>
+        </div>
     </div>
 
-    <div class="right">
+    <!-- RIGHT -->
+    <div>
         <canvas id="userChart"></canvas>
     </div>
 </div>
 
-<h2>Diskussion</h2>
-<p>
+<h2 class="text-2xl font-semibold mt-10 mb-2 text-center">Diskussion</h2>
+<p class="max-w-3xl mx-auto text-center text-gray-600">
     Das Modell erkennt klare, typische Objekte wie Tiere oder Autos meist korrekt.
     Schwierigkeiten treten bei ungewöhnlichen Perspektiven oder verfremdeten Bildern auf.
     Unscharfe oder abgeschnittene Bilder führen häufiger zu falschen Klassifikationen.
@@ -95,9 +60,9 @@
     Insgesamt zeigt sich, dass das Modell stark von Trainingsdaten abhängt.
 </p>
 
-<h2>Dokumentation</h2>
-<p><b>Technisch:</b> ml5.js wird verwendet, um ein vortrainiertes MobileNet-Modell zur Bildklassifikation zu nutzen. Chart.js dient zur Visualisierung der Confidence-Werte als Diagramm.</p>
-<p><b>Fachlich:</b> Bilder werden an das Modell übergeben, welches Wahrscheinlichkeiten für Klassen zurückgibt. Die Top-3-Ergebnisse werden extrahiert und grafisch dargestellt.</p>
+<h2 class="text-2xl font-semibold mt-10 mb-2 text-center">Dokumentation</h2>
+<p class="text-center"><b>Technisch:</b> ml5.js + Chart.js</p>
+<p class="text-center"><b>Fachlich:</b> Klassifikation über MobileNet + Visualisierung</p>
 
 <script>
     let classifier;
@@ -105,6 +70,9 @@
     let userChart;
 
     const userImage = document.getElementById("userImage");
+    const dropArea = document.getElementById("dropArea");
+    const fileInput = document.getElementById("fileInput");
+    const removeBtn = document.getElementById("removeBtn");
 
     const exampleImages = [
         { src: "images/affe.jpg", correct: true },
@@ -117,7 +85,6 @@
 
     async function init() {
         classifier = await ml5.imageClassifier('MobileNet');
-        console.log("Model geladen");
         modelReady = true;
         loadExamples();
     }
@@ -128,23 +95,19 @@
         const container = document.getElementById("examples");
 
         exampleImages.forEach(imgData => {
-            const div = document.createElement("div");
-            div.className = "container";
+            const wrapper = document.createElement("div");
+            wrapper.className = "grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded-2xl shadow";
 
             const left = document.createElement("div");
-            left.className = "left";
-
             const right = document.createElement("div");
-            right.className = "right";
 
             const label = document.createElement("p");
             label.textContent = imgData.correct ? "✔ korrekt" : "✘ falsch";
-            label.style.fontWeight = "bold";
-            label.style.color = imgData.correct ? "green" : "red";
+            label.className = imgData.correct ? "text-green-600 font-bold mb-2" : "text-red-600 font-bold mb-2";
 
             const img = document.createElement("img");
             img.src = imgData.src;
-            img.className = imgData.correct ? "correct" : "wrong";
+            img.className = "rounded-xl border-4 " + (imgData.correct ? "border-green-500" : "border-red-500");
 
             const canvas = document.createElement("canvas");
 
@@ -152,15 +115,11 @@
             left.appendChild(img);
             right.appendChild(canvas);
 
-            div.appendChild(left);
-            div.appendChild(right);
-            container.appendChild(div);
+            wrapper.appendChild(left);
+            wrapper.appendChild(right);
+            container.appendChild(wrapper);
 
-            img.onload = () => {
-                if (modelReady) {
-                    classifyExample(img, canvas);
-                }
-            };
+            img.onload = () => classifyExample(img, canvas);
         });
     }
 
@@ -175,59 +134,49 @@
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Confidence (%)',
-                    data: data
+                    data: data,
+                    backgroundColor: ['#60a5fa', '#34d399', '#fbbf24']
                 }]
-            },
-            datasets: [{
-                label: 'Confidence (%)',
-                data: data,
-                backgroundColor: [
-                    '#ff6384',
-                    '#36a2eb',
-                    '#ffce56'
-                ]
-            }]
+            }
         });
     }
 
     // Upload Handling
-    const dropArea = document.getElementById("dropArea");
-    const fileInput = document.getElementById("fileInput");
-
     dropArea.onclick = () => fileInput.click();
 
-    fileInput.onchange = e => {
-        const file = e.target.files[0];
-        loadUserImage(file);
-    };
+    fileInput.onchange = e => loadUserImage(e.target.files[0]);
 
     dropArea.ondragover = e => e.preventDefault();
 
     dropArea.ondrop = e => {
         e.preventDefault();
-        const file = e.dataTransfer.files[0];
-        loadUserImage(file);
+        loadUserImage(e.dataTransfer.files[0]);
     };
 
     function loadUserImage(file) {
         const reader = new FileReader();
         reader.onload = e => {
             userImage.src = e.target.result;
+            userImage.classList.remove("hidden");
+
+            dropArea.classList.add("hidden");
+            removeBtn.classList.remove("hidden");
         };
         reader.readAsDataURL(file);
     }
 
-    async function classifyUserImage() {
-        if (!modelReady) {
-            alert("Modell lädt noch...");
-            return;
-        }
+    function removeImage() {
+        userImage.src = "";
+        userImage.classList.add("hidden");
 
-        if (!userImage.src) {
-            alert("Bitte zuerst ein Bild laden!");
-            return;
-        }
+        dropArea.classList.remove("hidden");
+        removeBtn.classList.add("hidden");
+
+        if (userChart) userChart.destroy();
+    }
+
+    async function classifyUserImage() {
+        if (!modelReady || !userImage.src) return;
 
         const results = await classifier.classify(userImage);
 
@@ -237,21 +186,13 @@
         if (userChart) userChart.destroy();
 
         userChart = new Chart(document.getElementById("userChart"), {
-            type: 'bar',
+            type: 'pie',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Confidence (%)',
-                    data: data
+                    data: data,
+                    backgroundColor: ['#60a5fa', '#34d399', '#fbbf24']
                 }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100
-                    }
-                }
             }
         });
     }
