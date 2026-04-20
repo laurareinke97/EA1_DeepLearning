@@ -88,12 +88,16 @@
 
 <h2>Diskussion</h2>
 <p>
-    Hier deine Analyse einfügen (max. 10 Sätze).
+    Das Modell erkennt klare, typische Objekte wie Tiere oder Autos meist korrekt.
+    Schwierigkeiten treten bei ungewöhnlichen Perspektiven oder verfremdeten Bildern auf.
+    Unscharfe oder abgeschnittene Bilder führen häufiger zu falschen Klassifikationen.
+    Auch wenn mehrere Objekte im Bild sind, kann das Modell verwirrt werden.
+    Insgesamt zeigt sich, dass das Modell stark von Trainingsdaten abhängt.
 </p>
 
 <h2>Dokumentation</h2>
-<p><b>Technisch:</b> ml5.js für Klassifikation, Chart.js für Visualisierung.</p>
-<p><b>Fachlich:</b> Implementierungsansatz beschreiben.</p>
+<p><b>Technisch:</b> ml5.js wird verwendet, um ein vortrainiertes MobileNet-Modell zur Bildklassifikation zu nutzen. Chart.js dient zur Visualisierung der Confidence-Werte als Diagramm.</p>
+<p><b>Fachlich:</b> Bilder werden an das Modell übergeben, welches Wahrscheinlichkeiten für Klassen zurückgibt. Die Top-3-Ergebnisse werden extrahiert und grafisch dargestellt.</p>
 
 <script>
     let classifier;
@@ -102,17 +106,14 @@
 
     const userImage = document.getElementById("userImage");
 
-    // Beispielbilder (im /images Ordner haben)
-/*    const exampleImages = [
-        { src: "images/cat1.jpg", correct: true },
-        { src: "images/dog1.jpg", correct: true },
-        { src: "images/car1.jpg", correct: true },
-        { src: "images/weird1.jpg", correct: false },
-        { src: "images/weird2.jpg", correct: false },
-        { src: "images/weird3.jpg", correct: false }
+    const exampleImages = [
+        { src: "images/affe.jpg", correct: true },
+        { src: "images/toucan.jpg", correct: true },
+        { src: "images/faultier.jpg", correct: true },
+        { src: "images/nasenbaer.jpg", correct: false },
+        { src: "images/eule.jpg", correct: false },
+        { src: "images/vogel.jpg", correct: false }
     ];
-
- */
 
     async function init() {
         classifier = await ml5.imageClassifier('MobileNet');
@@ -123,7 +124,6 @@
 
     init();
 
-    // Beispielbilder laden und klassifizieren
     function loadExamples() {
         const container = document.getElementById("examples");
 
@@ -137,19 +137,30 @@
             const right = document.createElement("div");
             right.className = "right";
 
+            const label = document.createElement("p");
+            label.textContent = imgData.correct ? "✔ korrekt" : "✘ falsch";
+            label.style.fontWeight = "bold";
+            label.style.color = imgData.correct ? "green" : "red";
+
             const img = document.createElement("img");
             img.src = imgData.src;
             img.className = imgData.correct ? "correct" : "wrong";
 
             const canvas = document.createElement("canvas");
 
+            left.appendChild(label);
             left.appendChild(img);
             right.appendChild(canvas);
+
             div.appendChild(left);
             div.appendChild(right);
             container.appendChild(div);
 
-            img.onload = () => classifyExample(img, canvas);
+            img.onload = () => {
+                if (modelReady) {
+                    classifyExample(img, canvas);
+                }
+            };
         });
     }
 
@@ -167,6 +178,14 @@
                     label: 'Confidence (%)',
                     data: data
                 }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
             }
         });
     }
@@ -198,7 +217,6 @@
         reader.readAsDataURL(file);
     }
 
-    // Klassifikation User Bild
     async function classifyUserImage() {
         if (!modelReady) {
             alert("Modell lädt noch...");
@@ -211,7 +229,6 @@
         }
 
         const results = await classifier.classify(userImage);
-        console.log(results);
 
         const labels = results.slice(0, 3).map(r => r.label);
         const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
@@ -226,6 +243,14 @@
                     label: 'Confidence (%)',
                     data: data
                 }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
             }
         });
     }
