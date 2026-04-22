@@ -88,6 +88,8 @@
     </div>
 
     <div>
+        <!-- headers -->
+        <h3 id="userLabel" class="text-lg font-semibold mb-2 text-center text-primary"></h3>
         <canvas id="userChart"></canvas>
     </div>
 </div>
@@ -110,6 +112,10 @@
         { src: "images/eule.jpg", correct: false },
         { src: "images/vogel.jpg", correct: false }
     ];
+
+    function formatLabel(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
 
     async function init() {
         classifier = await ml5.imageClassifier('MobileNet');
@@ -164,6 +170,13 @@
         const labels = results.slice(0, 3).map(r => r.label);
         const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
 
+        //  headers
+        const heading = document.createElement("h3");
+        heading.className = "text-lg font-semibold mb-2 text-center text-primary";
+        heading.innerText = `${formatLabel(results[0].label)} (${(results[0].confidence * 100).toFixed(1)}%)`;
+
+        canvas.parentElement.prepend(heading);
+
         new Chart(canvas, {
             type: 'pie',
             data: {
@@ -205,6 +218,8 @@
         dropArea.classList.remove("hidden");
         removeBtn.classList.add("hidden");
 
+        document.getElementById("userLabel").innerText = "";
+
         if (userChart) userChart.destroy();
     }
 
@@ -215,6 +230,10 @@
 
         const labels = results.slice(0, 3).map(r => r.label);
         const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
+
+        // headers
+        document.getElementById("userLabel").innerText =
+            `${formatLabel(results[0].label)} (${(results[0].confidence * 100).toFixed(1)}%)`;
 
         if (userChart) userChart.destroy();
 
