@@ -93,9 +93,8 @@
     </div>
   </div>
 
-  <div>
-    <h3 id="userLabel" class="text-center font-semibold mb-2 text-primary"></h3>
-    <canvas id="userChart" class="w-full min-h-[250px]"></canvas>
+  <div class="relative w-full max-w-sm mx-auto">
+    <canvas id="userChart"></canvas>
   </div>
 </div>
 
@@ -394,6 +393,10 @@
           data,
           backgroundColor: ['#16a34a', '#86efac', '#bbf7d0']
         }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true
       }
     });
   }
