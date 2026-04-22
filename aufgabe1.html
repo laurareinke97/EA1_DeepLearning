@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>ml5 Image Classification</title>
+
+  <!-- ml5 -->
+  <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2d6844',
+            soft: '#f0fdf4'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-gray-100 text-gray-800 p-6">
+
+<header class="bg-green-800 text-white p-4 shadow">
+  <div class="max-w-5xl mx-auto flex justify-between items-center">
+    <h1 class="text-xl font-bold">Deep Learning</h1>
+
+    <nav class="space-x-3">
+      <a href="index.html">Start</a>
+      <a href="exercise1.html" class="underline">Aufgabe 1</a>
+      <a href="exercise2.html">Aufgabe 2</a>
+      <a href="exercise3.html">Aufgabe 3</a>
+    </nav>
+  </div>
+</header>
+
+
+<!-- ACCORDION -->
+<h2 class="text-2xl font-semibold mb-4 text-center">Beispiele</h2>
+
+<div class="max-w-5xl mx-auto space-y-4">
+
+  <!-- CORRECT -->
+  <div class="bg-white rounded-xl shadow">
+    <button onclick="toggleSection('correctSection')"
+            class="w-full text-left p-4 font-semibold text-primary flex justify-between">
+      ✔ Korrekte Klassifikationen
+      <span>▼</span>
+    </button>
+    <div id="correctSection" class="p-4 space-y-4 hidden"></div>
+  </div>
+
+  <!-- WRONG -->
+  <div class="bg-white rounded-xl shadow">
+    <button onclick="toggleSection('wrongSection')"
+            class="w-full text-left p-4 font-semibold text-red-600 flex justify-between">
+      ✘ Falsche Klassifikationen
+      <span>▼</span>
+    </button>
+    <div id="wrongSection" class="p-4 space-y-4 hidden"></div>
+  </div>
+
+</div>
+
+<!-- USER SECTION -->
+<h2 class="text-2xl font-semibold mt-10 mb-4 text-center">Eigenes Bild testen</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl shadow max-w-5xl mx-auto">
+
+  <div>
+    <div id="dropArea" class="border-2 border-dashed border-gray-300 p-6 text-center rounded-xl cursor-pointer hover:bg-soft transition">
+      Bild hier hineinziehen oder klicken
+      <input type="file" id="fileInput" hidden>
+    </div>
+
+    <img id="userImage" class="mt-4 rounded-xl hidden"/>
+
+    <div class="flex gap-2 mt-4">
+      <button onclick="classifyUserImage()"
+              class="bg-primary hover:bg-green-700 text-white px-4 py-2 rounded-xl">
+        Classify
+      </button>
+
+      <button onclick="removeImage()"
+              class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl hidden"
+              id="removeBtn">
+        Bild löschen
+      </button>
+    </div>
+  </div>
+
+  <div>
+    <h3 id="userLabel" class="text-lg font-semibold mb-2 text-center text-primary"></h3>
+    <canvas id="userChart"></canvas>
+  </div>
+</div>
+
+<script>
+  let classifier;
+  let modelReady = false;
+  let userChart;
+
+  const userImage = document.getElementById("userImage");
+  const dropArea = document.getElementById("dropArea");
+  const fileInput = document.getElementById("fileInput");
+  const removeBtn = document.getElementById("removeBtn");
+
+  const exampleImages = [
+    { src: "images/affe.jpg", correct: true, label: "squirrel monkey" },
+    { src: "images/toucan.jpg", correct: true, label: "toucan" },
+    { src: "images/faultier.jpg", correct: true, label: "sloth" },
+    { src: "images/nasenbaer.jpg", correct: false, label: "coati" },
+    { src: "images/eule.jpg", correct: false, label: "owl" },
+    { src: "images/vogel.jpg", correct: false, label: "unknown bird" }
+  ];
+
+  async function init() {
+    classifier = await ml5.imageClassifier('MobileNet');
+    modelReady = true;
+    loadExamples();
+  }
+
+  init();
+
+  function toggleSection(id) {
+    document.getElementById(id).classList.toggle("hidden");
+  }
+
+  function loadExamples() {
+    const correctContainer = document.getElementById("correctSection");
+    const wrongContainer = document.getElementById("wrongSection");
+
+    exampleImages.forEach(imgData => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl";
+
+      const left = document.createElement("div");
+      const right = document.createElement("div");
+
+      const img = document.createElement("img");
+      img.src = imgData.src;
+      img.className = "rounded-xl border-4 " +
+              (imgData.correct ? "border-green-500" : "border-red-500");
+
+      const canvas = document.createElement("canvas");
+
+      left.appendChild(img);
+      right.appendChild(canvas);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+
+      if (imgData.correct) {
+        correctContainer.appendChild(wrapper);
+      } else {
+        wrongContainer.appendChild(wrapper);
+      }
+
+      img.onload = () => classifyExample(img, canvas, imgData);
+    });
+  }
+
+  async function classifyExample(img, canvas, imgData) {
+    const results = await classifier.classify(img);
+
+    const labels = results.slice(0, 3).map(r => r.label);
+    const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
+
+    const container = canvas.parentElement;
+
+    // MAIN HEADING (REAL LABEL)
+    const heading = document.createElement("h3");
+    heading.className = "text-lg font-semibold mb-1 text-center";
+
+    if (imgData.correct) {
+      heading.classList.add("text-green-600");
+      heading.innerText = `✔ ${imgData.label}`;
+    } else {
+      heading.classList.add("text-red-600");
+      heading.innerText = `✘ ${imgData.label}`;
+    }
+
+    container.prepend(heading);
+
+    //  SUBHEADING (MODEL GUESS)
+    const sub = document.createElement("p");
+    sub.className = "text-sm text-center mb-2 text-gray-600";
+    sub.innerText = `Modell denkt: ${results[0].label} (${(results[0].confidence * 100).toFixed(1)}%)`;
+
+    container.insertBefore(sub, canvas);
+
+    new Chart(canvas, {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: ['#16a34a', '#86efac', '#bbf7d0']
+        }]
+      }
+    });
+  }
+
+  // Upload
+  dropArea.onclick = () => fileInput.click();
+  fileInput.onchange = e => loadUserImage(e.target.files[0]);
+
+  dropArea.ondragover = e => e.preventDefault();
+  dropArea.ondrop = e => {
+    e.preventDefault();
+    loadUserImage(e.dataTransfer.files[0]);
+  };
+
+  function loadUserImage(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      userImage.src = e.target.result;
+      userImage.classList.remove("hidden");
+
+      dropArea.classList.add("hidden");
+      removeBtn.classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage() {
+    userImage.src = "";
+    userImage.classList.add("hidden");
+
+    dropArea.classList.remove("hidden");
+    removeBtn.classList.add("hidden");
+
+    document.getElementById("userLabel").innerText = "";
+
+    if (userChart) userChart.destroy();
+  }
+
+  async function classifyUserImage() {
+    if (!modelReady || !userImage.src) return;
+
+    const results = await classifier.classify(userImage);
+
+    const labels = results.slice(0, 3).map(r => r.label);
+    const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
+
+    document.getElementById("userLabel").innerText =
+            `Vorhersage: ${results[0].label} (${(results[0].confidence * 100).toFixed(1)}%)`;
+
+    if (userChart) userChart.destroy();
+
+    userChart = new Chart(document.getElementById("userChart"), {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: ['#16a34a', '#86efac', '#bbf7d0']
+        }]
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
