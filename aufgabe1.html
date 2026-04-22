@@ -185,13 +185,51 @@
       Dabei werden die Confidence-Werte in Prozent umgerechnet und direkt im Diagramm dargestellt.
     </p>
 
-    <h2 class="text-2xl font-semibold">Logik der Anwendung</h2>
-    <ul class="list-disc ml-5">
-      <li>Initialisierung des Modells beim Laden der Seite</li>
-      <li>Automatische Klassifikation der Beispielbilder nach dem Laden</li>
-      <li>Trennung in korrekte und falsche Klassifikationen zur besseren Analyse</li>
-      <li>Upload- und Drag-and-Drop-Funktion für Nutzerbilder</li>
-      <li>Reset-Logik zum Entfernen von Bild und Diagramm</li>
+    <h2 class="text-2xl font-semibold">Funktionen und Logik der Anwendung</h2>
+
+    <ul class="list-disc ml-5 space-y-3">
+
+      <li>
+        <b>init()</b><br>
+        Asynchrone Initialisierungsfunktion, die das vortrainierte MobileNet-Modell lädt und nach erfolgreicher Bereitstellung die Verarbeitung der Beispielbilder startet.
+        Sie stellt sicher, dass alle nachfolgenden Klassifikationsprozesse erst nach vollständiger Modellverfügbarkeit ausgeführt werden.
+      </li>
+
+      <li>
+        <b>toggleSection(id)</b><br>
+        Implementiert eine zustandsbasierte Steuerung der Benutzeroberfläche durch dynamisches Ein- und Ausblenden von DOM-Elementen mittels CSS-Klassen.
+        Dient der strukturierten Darstellung im Sinne eines Accordion-Layouts.
+      </li>
+
+      <li>
+        <b>loadExamples()</b><br>
+        Verantwortlich für die dynamische Generierung der DOM-Struktur für die Beispielbilder.
+        Die Funktion organisiert die Inhalte kategorisch (korrekt/falsch) und nutzt ereignisgesteuerte Verarbeitung, indem die Klassifikation über den <code>onload</code>-Handler der Bilder ausgelöst wird.
+      </li>
+
+      <li>
+        <b>classifyExample(img, canvas, imgData)</b><br>
+        Führt die inferenzbasierte Klassifikation eines Bildes durch und extrahiert die Top-3 Vorhersagen des Modells.
+        Die Ergebnisse werden transformiert und über eine Visualisierungsbibliothek als Diagramm dargestellt, ergänzt durch kontextuelle UI-Elemente zur Bewertung der Klassifikation.
+      </li>
+
+      <li>
+        <b>loadUserImage(file)</b><br>
+        Verarbeitet nutzergenerierte Eingaben mithilfe der FileReader-API, indem lokale Bilddaten in ein darstellbares Format (Data URL) konvertiert und im DOM eingebunden werden.
+      </li>
+
+      <li>
+        <b>removeImage()</b><br>
+        Implementiert eine konsistente Rücksetzlogik für den Anwendungszustand, indem sowohl visuelle als auch datenbezogene Elemente (Bild, Ergebnisse, Diagramm) entfernt werden.
+        Dies unterstützt eine klare und fehlerfreie Nutzerinteraktion.
+      </li>
+
+      <li>
+        <b>classifyUserImage()</b><br>
+        Führt eine nutzerinitiierte Klassifikation durch, wobei die Modellinferenz asynchron erfolgt.
+        Die resultierenden Wahrscheinlichkeitswerte werden aggregiert, aufbereitet und in Form eines Diagramms sowie als textuelle Hauptvorhersage dargestellt.
+      </li>
+
     </ul>
 
     <h2 class="text-2xl font-semibold">Ergebnisse und Beobachtungen</h2>
