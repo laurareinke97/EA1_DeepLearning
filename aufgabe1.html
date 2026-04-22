@@ -172,6 +172,40 @@
        Fachliche Dokumentation <span>▼</span>
     </button>
     <div id="codeDocSection" class="p-4 space-y-2 hidden"></div>
+    <h2 class="text-2xl font-semibold">Ansatz und Implementierung</h2>
+    <p>
+      Die Anwendung nutzt das vortrainierte Klassifikationsmodell MobileNet, das über ml5.js im Browser geladen wird.
+      Nach Initialisierung des Modells werden sowohl die Beispielbilder als auch vom Nutzer hochgeladene Bilder über dieselbe Funktion klassifiziert.
+      Die Klassifikation erfolgt asynchron, sodass mehrere Bilder unabhängig voneinander verarbeitet werden können.
+      Die Seite wurde mit HTML und JavaScript unter Einsatz des CSS-Frameworks Tailwind CSS geschrieben.
+    </p>
+
+    <p>
+      Für jedes Bild werden die Top-3 Vorhersagen extrahiert und als Diagramm mithilfe von Chart.js visualisiert.
+      Dabei werden die Confidence-Werte in Prozent umgerechnet und direkt im Diagramm dargestellt.
+    </p>
+
+    <h2 class="text-2xl font-semibold">Logik der Anwendung</h2>
+    <ul class="list-disc ml-5">
+      <li>Initialisierung des Modells beim Laden der Seite</li>
+      <li>Automatische Klassifikation der Beispielbilder nach dem Laden</li>
+      <li>Trennung in korrekte und falsche Klassifikationen zur besseren Analyse</li>
+      <li>Upload- und Drag-and-Drop-Funktion für Nutzerbilder</li>
+      <li>Reset-Logik zum Entfernen von Bild und Diagramm</li>
+    </ul>
+
+    <h2 class="text-2xl font-semibold">Ergebnisse und Beobachtungen</h2>
+    <p>
+      Die Ergebnisse zeigen, dass das Modell besonders zuverlässig bei Bildern mit klar erkennbaren, typischen Merkmalen arbeitet, welche Teil der ml5-Library sind.
+      Ist die Klasse im Trainingsdatensatz enthalten, wird sie zuverlässig klassifiziert, wenn nicht wird eine visuell ähnliche Klasse zugeordnet.
+    </p>
+
+    <h2 class="text-2xl font-semibold">Quellen</h2>
+    <ul class="list-disc ml-5">
+      <li>ml5.js Dokumentation</li>
+      <li>MobileNet (Howard et al., 2017)</li>
+    </ul>
+
   </div>
 
 </div>
