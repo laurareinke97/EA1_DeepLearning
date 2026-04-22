@@ -164,18 +164,33 @@
         });
     }
 
-    async function classifyExample(img, canvas) {
+    async function classifyExample(img, canvas, imgData) {
         const results = await classifier.classify(img);
 
         const labels = results.slice(0, 3).map(r => r.label);
         const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
 
-        //  headers
-        const heading = document.createElement("h3");
-        heading.className = "text-lg font-semibold mb-2 text-center text-primary";
-        heading.innerText = `${formatLabel(results[0].label)} (${(results[0].confidence * 100).toFixed(1)}%)`;
+        const container = canvas.parentElement;
 
-        canvas.parentElement.prepend(heading);
+        const heading = document.createElement("h3");
+        heading.className = "text-lg font-semibold mb-1 text-center";
+
+        if (imgData.correct) {
+            heading.classList.add("text-green-600");
+            heading.innerText = `✔ ${imgData.label}`;
+        } else {
+            heading.classList.add("text-red-600");
+            heading.innerText = `✘ ${imgData.label}`;
+        }
+
+        container.prepend(heading);
+
+        // 👉 SUBHEADING (MODEL GUESS)
+        const sub = document.createElement("p");
+        sub.className = "text-sm text-center mb-2 text-gray-600";
+        sub.innerText = `Modell denkt: ${results[0].label} (${(results[0].confidence * 100).toFixed(1)}%)`;
+
+        container.insertBefore(sub, canvas);
 
         new Chart(canvas, {
             type: 'pie',
@@ -188,6 +203,7 @@
             }
         });
     }
+
 
     // Upload
     dropArea.onclick = () => fileInput.click();
