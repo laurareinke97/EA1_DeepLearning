@@ -114,16 +114,24 @@
     </button>
     <div id="interpretationSection" class="p-4 space-y-2 hidden">
       <p>
-        Die Ergebnisse zeigen, dass das Modell häufig die richtige Objektkategorie erkennt,
-        insbesondere bei klar sichtbaren und typischen Perspektiven.
+        Die Ergebnisse mit der höchsten Confidence sind die des Faultiers (sloth) und des Tukans.
+        Das lässt sich unter anderem dadurch erklären, dass beide Tiere in den Bildern in sehr charakteristischer Form dargestellt sind und klar sowie unverdeckt erkennbar sind.
+        Außerdem sind diese Klassen im ImageNet-Datensatz enthalten, auf dem die ml5-Library basiert
+        (<a href="https://github.com/ml5js/ml5-library/blob/main/src/utils/IMAGENET_CLASSES.js">Link</a>).
       </p>
+
       <p>
-        Bei verdeckten oder ungewöhnlichen Bildern kommt es jedoch zu Fehlklassifikationen.
-        Dabei wählt das Modell oft visuell ähnliche Klassen (z. B. andere Vogelarten).
+        Das Totenkopfäffchen (squirrel monkey) wurde ebenfalls korrekt klassifiziert, allerdings mit geringerer Confidence.
+        Das lässt sich dadurch erklären, dass der Datensatz mehrere Affenarten enthält, die sich visuell stark ähneln und daher schwer voneinander zu unterscheiden sind.
+        Zusätzlich spielt vermutlich auch die Qualität der Trainingsdaten eine Rolle, da Datensätze wie ImageNet viele Bilder aus dem Internet enthalten und fehlerhafte oder uneindeutige Beschriftungen vorkommen können.
+        Bei einer Google-Suche nach "titi monkey" erscheinen beispielsweise auch Bilder von Totenkopfäffchen, was diese Problematik verdeutlicht.
+        <img src="images/screenshot_monkey.png">
       </p>
+
       <p>
-        Dies deutet darauf hin, dass das Modell stark auf visuelle Muster und Trainingsdaten
-        angewiesen ist und Schwierigkeiten bei ungewöhnlichen Kontexten hat.
+        Die Fehlklassifikationen treten vor allem bei Bildern auf, deren Klassen nicht im ImageNet-Datensatz enthalten sind.
+        Obwohl der Nasenbär (coati) gut sichtbar ist, wird er nicht als Tier erkannt, sondern es werden stattdessen einzelne Formen oder Strukturen fehlinterpretiert.
+        Beim Brillenkauz ist zusätzlich das Gesicht teilweise verdeckt, wodurch wichtige Merkmale fehlen, während der Eichkornkuckuck zwar als Vogel erkannt wird, jedoch nicht korrekt zugeordnet werden kann, da diese Art nicht im Datensatz enthalten ist.
       </p>
     </div>
   </div>
@@ -179,12 +187,12 @@
   const removeBtn = document.getElementById("removeBtn");
 
   const exampleImages = [
-    { src: "images/affe.jpg", correct: true, label: "squirrel monkey" },
-    { src: "images/toucan.jpg", correct: true, label: "toucan" },
-    { src: "images/faultier.jpg", correct: true, label: "sloth" },
-    { src: "images/nasenbaer.jpg", correct: false, label: "coati" },
-    { src: "images/eule.jpg", correct: false, label: "owl" },
-    { src: "images/vogel.jpg", correct: false, label: "unknown bird" }
+    { src: "images/affe.jpg", correct: true, label: "squirrel monkey (Totelkopfäffchen)" },
+    { src: "images/toucan.jpg", correct: true, label: "toucan (Tukan)" },
+    { src: "images/faultier.jpg", correct: true, label: "sloth (Faultier)" },
+    { src: "images/nasenbaer.jpg", correct: false, label: "coati (Nasenbär)" },
+    { src: "images/eule.jpg", correct: false, label: "spectacled owl (Brillenkautz)" },
+    { src: "images/vogel.jpg", correct: false, label: "squirrel cuckoo (Eichhornkuckuck)" }
   ];
 
   async function init() {
