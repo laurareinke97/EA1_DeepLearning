@@ -88,7 +88,6 @@
     </div>
 
     <div>
-        <!-- headers -->
         <h3 id="userLabel" class="text-lg font-semibold mb-2 text-center text-primary"></h3>
         <canvas id="userChart"></canvas>
     </div>
@@ -105,17 +104,13 @@
     const removeBtn = document.getElementById("removeBtn");
 
     const exampleImages = [
-        { src: "images/affe.jpg", correct: true },
-        { src: "images/toucan.jpg", correct: true },
-        { src: "images/faultier.jpg", correct: true },
-        { src: "images/nasenbaer.jpg", correct: false },
-        { src: "images/eule.jpg", correct: false },
-        { src: "images/vogel.jpg", correct: false }
+        { src: "images/affe.jpg", correct: true, label: "Affe" },
+        { src: "images/toucan.jpg", correct: true, label: "Tukan" },
+        { src: "images/faultier.jpg", correct: true, label: "Faultier" },
+        { src: "images/nasenbaer.jpg", correct: false, label: "Nasenbär" },
+        { src: "images/eule.jpg", correct: false, label: "Eule" },
+        { src: "images/vogel.jpg", correct: false, label: "Unbekannter Vogel" }
     ];
-
-    function formatLabel(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
 
     async function init() {
         classifier = await ml5.imageClassifier('MobileNet');
@@ -126,8 +121,7 @@
     init();
 
     function toggleSection(id) {
-        const el = document.getElementById(id);
-        el.classList.toggle("hidden");
+        document.getElementById(id).classList.toggle("hidden");
     }
 
     function loadExamples() {
@@ -160,7 +154,7 @@
                 wrongContainer.appendChild(wrapper);
             }
 
-            img.onload = () => classifyExample(img, canvas);
+            img.onload = () => classifyExample(img, canvas, imgData);
         });
     }
 
@@ -172,6 +166,7 @@
 
         const container = canvas.parentElement;
 
+        // MAIN HEADING (REAL LABEL)
         const heading = document.createElement("h3");
         heading.className = "text-lg font-semibold mb-1 text-center";
 
@@ -185,7 +180,7 @@
 
         container.prepend(heading);
 
-        // 👉 SUBHEADING (MODEL GUESS)
+        //  SUBHEADING (MODEL GUESS)
         const sub = document.createElement("p");
         sub.className = "text-sm text-center mb-2 text-gray-600";
         sub.innerText = `Modell denkt: ${results[0].label} (${(results[0].confidence * 100).toFixed(1)}%)`;
@@ -203,7 +198,6 @@
             }
         });
     }
-
 
     // Upload
     dropArea.onclick = () => fileInput.click();
@@ -247,9 +241,8 @@
         const labels = results.slice(0, 3).map(r => r.label);
         const data = results.slice(0, 3).map(r => (r.confidence * 100).toFixed(2));
 
-        // headers
         document.getElementById("userLabel").innerText =
-            `${formatLabel(results[0].label)} (${(results[0].confidence * 100).toFixed(1)}%)`;
+            `Vorhersage: ${results[0].label} (${(results[0].confidence * 100).toFixed(1)}%)`;
 
         if (userChart) userChart.destroy();
 
