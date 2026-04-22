@@ -144,12 +144,33 @@
       <span>▼</span>
     </button>
     <div id="techDocSection" class="p-4 space-y-2 hidden">
+      <h3>Verwendete Frameworks</h3>
       <ul class="list-disc ml-5 space-y-1">
-        <li>Verwendetes Modell: MobileNet (ml5.js)</li>
-        <li>Bibliotheken: ml5.js, Chart.js, TailwindCSS</li>
-        <li>Client-side Verarbeitung</li>
-        <li>Top-3 Klassifikation</li>
-        <li>Visualisierung mit Charts</li>
+        <li>ml5.js</li>
+        <p>ml5.js ist eine vortrainierte JavaScript-Bibliothek für Machine Learning im Browser.
+        In der Aufgabe wurde sie verwendet um das MobileNet-Modell zu laden und die Bilder direkt im Client zu klassifizieren.
+        </p>
+        <li>Chart.js</li>
+        <p>Chart.js habe ich zur Visualisierung der Ergebnisse verwendet.
+          Die Top-3 Vorhersagen des MobileNet-Modells wurden in einem Kreisdiagramm dargestellt um die Confidence-Werte zu Visualisieren.</p>
+        <li>Tailwind CSS</li>
+       <p>Zur schnellen und konsistenten Gestaltung der UI habe ich Tailwind CSS verwendet.
+       Da es sich hierbei um ein Utility-First CSS-Framework handelt, erfolgte die Gestaltung ausschließlich anhand von HTML-Klassen des Tailwind CSS-Frameworks.</p>
+      </ul>
+
+      <h3>Technische Besonderheiten</h3>
+      <ul class="list-disc ml-5 space-y-1">
+        <li>Responsives Design</li>
+        <p>Durch den Einsatz von Tailwind CSS und die Berücksichtigung der entsprechenden Klassen ist das Design responsiv und passt sich somit der Bildschirm/Browsergröße an.
+        Auch die Nutzung auf einem Mobilgerät ist möglich.</p>
+        <li>Accordion-Struktur</li>
+        <p>Da die Seite vor allem mit den eingebundenen Bildern relativ lang geworden ist, habe ich mich für eine ausklappbare Accordion-Struktur entschieden, um einem besseren Überblick über die Seite zu gewährleisten. So ist die Seite auf den ersten Blick kürzer und gesuchtes kann leichter gefunden werden.</p>
+        <li>Reset-Funktion für Nutzerinteraktionen</li>
+        <p>
+          Zur Verbesserung der Benutzerführung wurde eine Reset-Funktion implementiert, mit der hochgeladene Bilder gezielt entfernt werden können.
+          Dabei werden sowohl das angezeigte Bild als auch die zugehörigen Klassifikationsergebnisse und Diagramme zurückgesetzt.
+          Im Gegensatz zu einer permanent sichtbaren Upload-Fläche sorgt diese Lösung für eine aufgeräumtere Oberfläche und eine eindeutigere Interaktion.
+        </p>
       </ul>
     </div>
   </div>
