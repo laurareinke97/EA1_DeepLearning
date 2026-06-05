@@ -4,7 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aufgabe 2</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#166534' } } } };
+    </script>
+
+    <!-- Bibliotheken -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@1.5.1/dist/tfjs-vis.umd.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+    <style>
+        .plot{width:100%;height:330px}
+        #overlay{position:fixed;inset:0;z-index:50;background:rgba(243,244,246,.95);
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            backdrop-filter:blur(2px);transition:opacity .5s}
+        #overlay.hidden{opacity:0;pointer-events:none}
+        .spinner{width:46px;height:46px;border:3px solid #d1d5db;border-top-color:#166534;
+            border-radius:50%;animation:spin .9s linear infinite;margin-bottom:20px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
 </head>
 
 <body class="bg-gray-100 text-gray-800">
@@ -22,10 +42,614 @@
     </div>
 </header>
 
-<main class="max-w-4xl mx-auto p-6">
-    <h2 class="text-2xl font-bold text-primary mb-4">Aufgabe 2</h2>
-    <p>Hier entsteht Aufgabe 2.</p>
+<!-- ====== LADE-OVERLAY ====== -->
+<div id="overlay">
+    <div class="spinner"></div>
+    <div id="ov-status" class="font-mono text-sm text-gray-800">Initialisiere&hellip;</div>
+    <div id="ov-detail" class="font-mono text-xs text-gray-500 mt-1">&nbsp;</div>
+    <div class="w-72 h-1.5 bg-gray-300 rounded mt-5 overflow-hidden">
+        <i id="ov-bar" class="block h-full w-0 bg-green-700 transition-all duration-200"></i>
+    </div>
+</div>
+
+<main class="max-w-5xl mx-auto p-6">
+
+    <h2 class="text-2xl font-bold text-primary mb-2">Aufgabe 2</h2>
+    <p class="text-gray-600 max-w-3xl mb-3">
+        Regression einer unbekannten, verrauschten Funktion mit einem Feed-Forward Neural Network
+        (TensorFlow.js). Drei Modelle werden beim Laden im Browser trainiert &ndash; rauschfrei,
+        Best-Fit und Over-Fit &ndash; und das Phänomen Overfitting sichtbar gemacht.
+    </p>
+    <div class="font-mono text-sm bg-white border border-gray-200 border-l-4 border-l-green-700 rounded px-4 py-3 mb-2 overflow-x-auto">
+        Ground&nbsp;Truth&nbsp; y(x) = 0.5·(x+0.8)·(x+1.8)·(x−0.2)·(x−0.3)·(x−1.9) + 1 &nbsp;,&nbsp; x ∈ [−2, +2]
+    </div>
+
+    <!-- ====== R1 ====== -->
+    <section class="py-9 border-b border-gray-200">
+        <div class="flex items-baseline gap-3 mb-2">
+            <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R1</span>
+            <h3 class="text-xl font-bold text-gray-900">Die Datensätze</h3>
+        </div>
+        <p class="text-gray-600 max-w-3xl mb-4">
+            N = 100 gleichverteilte x-Werte aus [−2, 2], aufgeteilt in 50 Trainings- und 50 Testpaare.
+            Links rauschfrei (exakt auf der Ground&nbsp;Truth), rechts mit Gauß'schem Label-Rauschen
+            (Varianz V = 0.05, σ = √0.05 ≈ 0.224). Nur der Output wird verrauscht.
+        </p>
+        <div class="flex flex-wrap gap-5 text-sm text-gray-600 mb-4">
+            <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#1d4ed8"></i>Trainingsdaten (50)</span>
+            <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#d97706"></i>Testdaten (50)</span>
+            <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:2.5px dashed #9ca3af"></i>Ground Truth y(x)</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Ohne Rauschen</div>
+                <div id="p-clean" class="plot"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Mit Rauschen (V = 0.05)</div>
+                <div id="p-noisy" class="plot"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== R2 ====== -->
+    <section class="py-9 border-b border-gray-200">
+        <div class="flex items-baseline gap-3 mb-2">
+            <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R2</span>
+            <h3 class="text-xl font-bold text-gray-900">Modell ohne Rauschen — y<sub>unverrauscht</sub>(x)</h3>
+        </div>
+        <p class="text-gray-600 max-w-3xl mb-4">
+            Trainiert auf den 50 rauschfreien Trainingsdaten. Ohne Rauschen gibt es nichts „auswendig zu lernen“
+            → kein Overfitting möglich. Der Test-Loss sollte daher etwa dem Trainings-Loss entsprechen
+            (Loss<sub>train</sub> ≈ Loss<sub>test</sub>).
+        </p>
+        <div class="flex flex-wrap gap-5 text-sm text-gray-600 mb-4">
+            <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:3px solid #15803d"></i>Vorhersage ŷ(x)</span>
+            <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:2.5px dashed #9ca3af"></i>Ground Truth</span>
+            <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#1d4ed8"></i>Trainingsdaten</span>
+            <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#d97706"></i>Testdaten</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Trainingsdaten (ohne Rauschen)</div>
+                <div id="p-clean-train" class="plot"></div>
+                <div class="flex border-t border-gray-200 font-mono">
+                    <div class="flex-1 px-4 py-3"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Train</div><div id="mse-clean-train" class="text-lg font-semibold text-blue-700">—</div></div>
+                    <div class="flex-1 px-4 py-3 border-l border-gray-200"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Test</div><div id="mse-clean-train-ref" class="text-lg font-semibold text-amber-600">—</div></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Testdaten (ohne Rauschen)</div>
+                <div id="p-clean-test" class="plot"></div>
+                <div class="flex border-t border-gray-200 font-mono">
+                    <div class="flex-1 px-4 py-3"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Train</div><div id="mse-clean-test-ref" class="text-lg font-semibold text-blue-700">—</div></div>
+                    <div class="flex-1 px-4 py-3 border-l border-gray-200"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Test</div><div id="mse-clean-test" class="text-lg font-semibold text-amber-600">—</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== R3 ====== -->
+    <section class="py-9 border-b border-gray-200">
+        <div class="flex items-baseline gap-3 mb-2">
+            <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R3</span>
+            <h3 class="text-xl font-bold text-gray-900">Best-Fit-Modell — y<sub>best</sub>(x)</h3>
+        </div>
+        <p class="text-gray-600 max-w-3xl mb-4">
+            Trainiert auf den <em>verrauschten</em> Trainingsdaten mit moderater Epochen-Zahl: das Modell lernt die
+            Struktur, ohne dem Rauschen zu folgen. Ziel ist der kleinstmögliche <strong>Test</strong>-Loss. Train- und
+            Test-Loss liegen nahe der Rausch-Untergrenze V ≈ 0.05.
+        </p>
+        <div class="flex flex-wrap gap-5 text-sm text-gray-600 mb-4">
+            <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:3px solid #15803d"></i>Vorhersage ŷ(x)</span>
+            <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:2.5px dashed #9ca3af"></i>Ground Truth</span>
+            <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#1d4ed8"></i>Trainingsdaten</span>
+            <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#d97706"></i>Testdaten</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Trainingsdaten (mit Rauschen)</div>
+                <div id="p-best-train" class="plot"></div>
+                <div class="flex border-t border-gray-200 font-mono">
+                    <div class="flex-1 px-4 py-3"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Train</div><div id="mse-best-train" class="text-lg font-semibold text-blue-700">—</div></div>
+                    <div class="flex-1 px-4 py-3 border-l border-gray-200"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Test</div><div id="mse-best-test-a" class="text-lg font-semibold text-amber-600">—</div></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Testdaten (mit Rauschen)</div>
+                <div id="p-best-test" class="plot"></div>
+                <div class="flex border-t border-gray-200 font-mono">
+                    <div class="flex-1 px-4 py-3"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Train</div><div id="mse-best-train-b" class="text-lg font-semibold text-blue-700">—</div></div>
+                    <div class="flex-1 px-4 py-3 border-l border-gray-200"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Test</div><div id="mse-best-test" class="text-lg font-semibold text-amber-600">—</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== R4 ====== -->
+    <section class="py-9 border-b border-gray-200">
+        <div class="flex items-baseline gap-3 mb-2">
+            <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R4</span>
+            <h3 class="text-xl font-bold text-gray-900">Over-Fit-Modell — y<sub>overfit</sub>(x)</h3>
+        </div>
+        <p class="text-gray-600 max-w-3xl mb-4">
+            Dasselbe Netz, dieselben verrauschten Trainingsdaten, aber <em>sehr lange</em> trainiert. Das
+            überparametrisierte Netz „merkt“ sich das Rauschen der Trainingspunkte: Trainings-Loss sehr klein,
+            Test-Loss steigt → Loss<sub>train</sub> ≪ Loss<sub>test</sub>.
+        </p>
+        <div class="flex flex-wrap gap-5 text-sm text-gray-600 mb-4">
+            <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:3px solid #15803d"></i>Vorhersage ŷ(x)</span>
+            <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:2.5px dashed #9ca3af"></i>Ground Truth</span>
+            <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#1d4ed8"></i>Trainingsdaten</span>
+            <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#d97706"></i>Testdaten</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Trainingsdaten (mit Rauschen)</div>
+                <div id="p-over-train" class="plot"></div>
+                <div class="flex border-t border-gray-200 font-mono">
+                    <div class="flex-1 px-4 py-3"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Train</div><div id="mse-over-train" class="text-lg font-semibold text-blue-700">—</div></div>
+                    <div class="flex-1 px-4 py-3 border-l border-gray-200"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Test</div><div id="mse-over-test-a" class="text-lg font-semibold text-amber-600">—</div></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Testdaten (mit Rauschen)</div>
+                <div id="p-over-test" class="plot"></div>
+                <div class="flex border-t border-gray-200 font-mono">
+                    <div class="flex-1 px-4 py-3"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Train</div><div id="mse-over-train-b" class="text-lg font-semibold text-blue-700">—</div></div>
+                    <div class="flex-1 px-4 py-3 border-l border-gray-200"><div class="text-[11px] uppercase tracking-wide text-gray-500">MSE Test</div><div id="mse-over-test" class="text-lg font-semibold text-amber-600">—</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== DISKUSSION ====== -->
+    <section class="py-9 border-b border-gray-200">
+        <div class="flex items-baseline gap-3 mb-4">
+            <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">§</span>
+            <h3 class="text-xl font-bold text-gray-900">Diskussion</h3>
+        </div>
+
+        <div id="result-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-7"><!-- dynamisch --></div>
+
+        <div class="max-w-3xl text-gray-700 leading-relaxed">
+            <p>
+                <strong>Beobachtung.</strong> Ohne Rauschen (R2) stimmen Trainings- und Test-Loss nahezu überein, weil es
+                nichts Zufälliges zu „merken“ gibt &ndash; die Daten enthalten reines Signal, also kann das Modell nur die
+                Funktion selbst lernen. Auf den verrauschten Daten erreicht das Best-Fit-Modell (R3) einen Test-Loss nahe der
+                theoretischen Untergrenze V ≈ 0.05 (die Rausch-Varianz, die selbst ein perfektes Modell nicht unterschreiten
+                kann), Train- und Test-Loss bleiben dicht beieinander. Das Over-Fit-Modell (R4) drückt den Trainings-Loss
+                durch sehr langes Training weit unter diese Grenze, weil das überparametrisierte Netz (2×100 Neuronen,
+                ≈ 10 k Gewichte für nur 50 Punkte) das Rauschen der einzelnen Trainingspunkte nachbildet; auf den unabhängigen
+                Testdaten verschlechtert sich der Loss dadurch sichtbar. Genau dieser wachsende Abstand zwischen Train- und
+                Test-Loss ist Overfitting. Lernrate (Adam, 0.01) und Batch-Size (32) stammen aus der Vorgabe; allein über die
+                Epochen-Zahl steuern wir Best-Fit gegen Over-Fit. Die Testdaten wurden bewusst <em>nie</em> zum Trainieren
+                oder zur Wahl der Epochen verwendet, damit sie ein unabhängiges Maß bleiben. Kernlektion: mehr Training senkt
+                immer den Trainings-Fehler, aber nicht zwangsläufig den Generalisierungsfehler &ndash; entscheidend ist der
+                Loss auf ungesehenen Daten.
+            </p>
+        </div>
+    </section>
+
+    <!-- ====== DOKUMENTATION ====== -->
+    <section class="py-9">
+        <div class="flex items-baseline gap-3 mb-4">
+            <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">⚙</span>
+            <h3 class="text-xl font-bold text-gray-900">Dokumentation</h3>
+        </div>
+        <div class="max-w-3xl text-gray-700 leading-relaxed space-y-3">
+            <h4 class="font-bold text-lg text-gray-900 mt-2">1 · Technisch</h4>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><strong>TensorFlow.js (4.22):</strong> definiert das Sequential-Modell, Forward-/Backprop, Adam-Optimizer,
+                    MSE-Loss und Vorhersagen &ndash; vollständig clientseitig im Browser, ohne Server.</li>
+                <li><strong>tfjs-vis (1.5):</strong> optionaler „Visor“ zur Live-Visualisierung der Loss-Kurven während des
+                    Trainings (über die Dev-Tools aktivierbar).</li>
+                <li><strong>Plotly.js (2.35):</strong> rendert alle Streudiagramme und die Vorhersagekurven (dichtes x-Gitter).</li>
+                <li><strong>Tailwind CSS</strong> für Layout und Gestaltung (konsistent mit dem restlichen Auftritt).</li>
+            </ul>
+            <p><strong>Technische Besonderheiten.</strong> (a) <em>Keine Normalisierung</em> von In-/Output: x ∈ [−2,2] ist
+                gut skaliert, und der Output-Layer nutzt eine <code class="font-mono bg-gray-100 px-1 rounded">linear</code>e
+                Aktivierung, deren Wertebereich (ℝ) zur Zielmenge passt &ndash; eine auf [0,1] beschränkte Aktivierung wäre
+                falsch. (b) Ein seedbarer PRNG (mulberry32) macht die Datenerzeugung reproduzierbar; das Gauß'sche Rauschen
+                entsteht per Box-Muller-Transformation. (c) Tensoren werden mit
+                <code class="font-mono bg-gray-100 px-1 rounded">tf.tidy()</code> entsorgt. (d) Alle drei Modelle werden beim
+                Laden trainiert; ein Overlay zeigt den Fortschritt, danach werden alle Diagramme dynamisch befüllt.</p>
+
+            <h4 class="font-bold text-lg text-gray-900 mt-4">2 · Fachlich</h4>
+            <p><strong>Datenpipeline.</strong> 100 gleichverteilte x → exaktes y(x) → zufälliges 50/50-Split →
+                additives Label-Rauschen N(0, V=0.05), also σ = √0.05. Wichtig: V ist die <em>Varianz</em>, nicht die
+                Standardabweichung &ndash; ein häufiger Fehler ist, 0.05 direkt als σ zu nehmen.</p>
+            <p><strong>Modell.</strong>
+                <code class="font-mono bg-gray-100 px-1 rounded">Dense(100, relu) → Dense(100, relu) → Dense(1, linear)</code>,
+                Loss = MSE, Optimizer = Adam(lr=0.01), Batch-Size = 32. ReLU-Schichten erlauben eine stückweise-lineare
+                Approximation beliebiger stetiger Funktionen, der lineare Output deckt den vollen Wertebereich ab.</p>
+            <p><strong>Drei Modelle.</strong> <em>Clean</em> (Referenz, kein Overfitting möglich), <em>Best-Fit</em>
+                (moderate Epochen, gute Generalisierung) und <em>Over-Fit</em> (sehr viele Epochen, lernt Rauschen auswendig).
+                Die Epochen-Zahlen wurden offline experimentell festgelegt &ndash; <strong>ohne</strong> die Testdaten, da
+                diese unabhängig bleiben müssen (kein Early-Stopping über das Testset).</p>
+            <p><strong>Resultate &amp; QA.</strong> Jeder MSE-Wert wird direkt aus Vorhersage vs. Ziel der dargestellten
+                Teilmenge berechnet, sodass Zahl und Diagramm konsistent sind. Über die Dev-Tools lassen sich Daten neu
+                erzeugen, speichern/laden, Epochen ändern, Modelle speichern/laden und auf frischen Zufallsdaten testen.
+                <strong>Quellen:</strong> TensorFlow.js-Tutorial „Making predictions from 2D data“, TFJS-API-Doku, Box-Muller
+                (Zentraler Grenzwertsatz).</p>
+        </div>
+
+        <!-- ====== DEV-TOOLS ====== -->
+        <details class="mt-8 border border-dashed border-gray-300 rounded-xl bg-white">
+            <summary class="cursor-pointer px-5 py-4 font-mono font-semibold text-sm tracking-wide select-none">
+                ▸ Entwickler-Werkzeuge — Datensatz / Training / Modell / Test
+            </summary>
+            <div class="px-5 pb-6 pt-1 border-t border-gray-200">
+                <div class="flex flex-wrap gap-3 items-end my-4">
+                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Seed
+                        <input id="in-seed" type="number" value="42" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
+                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">N (gesamt)
+                        <input id="in-n" type="number" value="100" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
+                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Varianz V
+                        <input id="in-var" type="number" step="0.01" value="0.05" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
+                    <button id="btn-regen" class="font-mono text-sm font-semibold px-4 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Daten neu erzeugen</button>
+                    <button id="btn-save-data" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Datensatz speichern</button>
+                    <button id="btn-load-data" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Datensatz laden</button>
+                    <input type="file" id="file-data" accept="application/json" class="hidden">
+                </div>
+                <div class="flex flex-wrap gap-3 items-end my-4">
+                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Epochen Clean
+                        <input id="in-ep-clean" type="number" value="250" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
+                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Epochen Best
+                        <input id="in-ep-best" type="number" value="120" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
+                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Epochen Over
+                        <input id="in-ep-over" type="number" value="3000" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
+                    <button id="btn-retrain" class="font-mono text-sm font-semibold px-4 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Modelle neu trainieren</button>
+                    <button id="btn-visor" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">TF-Visor an/aus</button>
+                </div>
+                <div class="flex flex-wrap gap-3 items-end my-4">
+                    <button id="btn-save-model" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Best-Modell speichern</button>
+                    <button id="btn-load-model" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Best-Modell laden</button>
+                    <input type="file" id="file-model" accept=".json,.bin" multiple class="hidden">
+                    <button id="btn-test" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Auf neuen Zufallsdaten testen</button>
+                </div>
+                <div id="dev-log" class="font-mono text-xs whitespace-pre-wrap bg-gray-900 text-green-200 rounded-lg px-4 py-3 mt-3 max-h-52 overflow-auto leading-relaxed">bereit.</div>
+            </div>
+        </details>
+    </section>
+
+    <p class="text-xs font-mono text-gray-500 pt-6">
+        FFNN-Regression · TensorFlow.js + Plotly · dynamisch im Browser trainiert ·
+        Modelle: Clean / Best-Fit / Over-Fit · keine Normalisierung · seedbar &amp; reproduzierbar.
+    </p>
 </main>
+
+<script>
+    /* =========================================================================
+       0) HILFSFUNKTIONEN: PRNG (seedbar) + Gauss (Box-Muller) + Statistik
+       ========================================================================= */
+    function mulberry32(seed){
+        let a = seed >>> 0;
+        return function(){
+            a |= 0; a = (a + 0x6D2B79F5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    function gauss(rng, mean, std){
+        let u1 = rng(), u2 = rng();
+        if (u1 < 1e-12) u1 = 1e-12;
+        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        return mean + std * z;
+    }
+    const linspace = (a, b, n) => Array.from({length:n}, (_,i)=> a + (b-a)*i/(n-1));
+    const fmt = v => (v==null || isNaN(v)) ? "—" : v.toFixed(4);
+
+    /* =========================================================================
+       1) GROUND TRUTH (unbekannte, zu lernende Funktion)
+       ========================================================================= */
+    function groundTruth(x){
+        return 0.5*(x+0.8)*(x+1.8)*(x-0.2)*(x-0.3)*(x-1.9) + 1;
+    }
+
+    /* =========================================================================
+       2) DATENERZEUGUNG: gleichverteilte x, y(x), 50/50-Split, Label-Rauschen
+       ========================================================================= */
+    function makeDataset(N, variance, seed){
+        const rng = mulberry32(seed);
+        const std = Math.sqrt(variance);                 // V ist Varianz → sigma = sqrt(V)
+        let pts = [];
+        for (let i=0;i<N;i++){
+            const x = -2 + 4*rng();
+            pts.push({x, y: groundTruth(x)});
+        }
+        for (let i=pts.length-1;i>0;i--){                // Fisher-Yates mischen
+            const j = Math.floor(rng()*(i+1));
+            [pts[i],pts[j]] = [pts[j],pts[i]];
+        }
+        const half = Math.floor(N/2);
+        const train = pts.slice(0, half);
+        const test  = pts.slice(half);
+        const noisify = arr => arr.map(p => ({x:p.x, y:p.y, yn: p.y + gauss(rng,0,std)}));
+        return { train: noisify(train), test: noisify(test), meta:{N, variance, std, seed} };
+    }
+
+    /* =========================================================================
+       3) MODELL: 2 hidden Layer (100, ReLU) + linearer Output, Adam(0.01), MSE
+       ========================================================================= */
+    function buildModel(){
+        const m = tf.sequential();
+        m.add(tf.layers.dense({inputShape:[1], units:100, activation:'relu'}));
+        m.add(tf.layers.dense({units:100, activation:'relu'}));
+        m.add(tf.layers.dense({units:1, activation:'linear'}));
+        m.compile({optimizer: tf.train.adam(0.01), loss: 'meanSquaredError'});
+        return m;
+    }
+    async function trainModel(model, xArr, tArr, epochs, onEpoch){
+        const xs = tf.tensor2d(xArr, [xArr.length, 1]);
+        const ys = tf.tensor2d(tArr, [tArr.length, 1]);
+        const callbacks = {};
+        if (onEpoch) callbacks.onEpochEnd = async (e, logs)=>{ if(e%20===0||e===epochs-1) onEpoch(e, logs); };
+        if (visorOn && typeof tfvis!=='undefined'){
+            Object.assign(callbacks, tfvis.show.fitCallbacks(
+                {name:'Training', tab:'Loss'}, ['loss'], {height:200, callbacks:['onEpochEnd']}));
+        }
+        await model.fit(xs, ys, {epochs, batchSize:32, shuffle:true, callbacks});
+        xs.dispose(); ys.dispose();
+    }
+    function mse(model, xArr, tArr){
+        return tf.tidy(()=>{
+            const p = model.predict(tf.tensor2d(xArr, [xArr.length,1]));
+            const t = tf.tensor2d(tArr, [tArr.length,1]);
+            return tf.losses.meanSquaredError(t, p).dataSync()[0];
+        });
+    }
+    function predictCurve(model, gx){
+        return tf.tidy(()=>{
+            const p = model.predict(tf.tensor2d(gx, [gx.length,1]));
+            return Array.from(p.dataSync());
+        });
+    }
+
+    /* =========================================================================
+       4) PLOTTING (Plotly) — Farben passend zum grünen Auftritt
+       ========================================================================= */
+    const GX = linspace(-2, 2, 240);
+    const GT = GX.map(groundTruth);
+    const PLOT_FONT = {family:'ui-monospace, monospace', size:11, color:'#6b7280'};
+    function baseLayout(){
+        return {
+            margin:{l:46,r:14,t:8,b:34},
+            paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+            font:PLOT_FONT, showlegend:false,
+            xaxis:{title:'x', gridcolor:'#e5e7eb', zerolinecolor:'#d1d5db', range:[-2.1,2.1]},
+            yaxis:{title:'y', gridcolor:'#e5e7eb', zerolinecolor:'#d1d5db'}
+        };
+    }
+    const C = {train:'#1d4ed8', test:'#d97706', accent:'#15803d', truth:'#9ca3af'};
+    const PCFG = {displayModeBar:false, responsive:true};
+
+    function scatter(name,xs,ys,color){
+        return {x:xs,y:ys,mode:'markers',type:'scatter',name,
+            marker:{color, size:7, line:{color:'#fff',width:1}}};
+    }
+    function truthTrace(){
+        return {x:GX,y:GT,mode:'lines',type:'scatter',name:'Ground Truth',
+            line:{color:C.truth,width:2,dash:'dash'}};
+    }
+    function predTrace(model){
+        return {x:GX,y:predictCurve(model,GX),mode:'lines',type:'scatter',name:'Vorhersage',
+            line:{color:C.accent,width:3}};
+    }
+
+    /* =========================================================================
+       5) GLOBALER ZUSTAND + ORCHESTRIERUNG
+       ========================================================================= */
+    let DATA=null, modelClean=null, modelBest=null, modelOver=null;
+    let visorOn=false;
+
+    function setOverlay(status, detail, pct){
+        document.getElementById('ov-status').textContent = status;
+        if (detail!=null) document.getElementById('ov-detail').textContent = detail;
+        if (pct!=null) document.getElementById('ov-bar').style.width = pct+'%';
+    }
+    function hideOverlay(){ document.getElementById('overlay').classList.add('hidden'); }
+    function showOverlay(){ document.getElementById('overlay').classList.remove('hidden'); }
+    function log(msg){
+        const el=document.getElementById('dev-log');
+        el.textContent += '\n'+msg; el.scrollTop=el.scrollHeight;
+    }
+
+    function drawData(){
+        const tr=DATA.train, te=DATA.test;
+        Plotly.newPlot('p-clean', [
+            truthTrace(),
+            scatter('Train', tr.map(p=>p.x), tr.map(p=>p.y), C.train),
+            scatter('Test',  te.map(p=>p.x), te.map(p=>p.y), C.test)
+        ], baseLayout(), PCFG);
+        Plotly.newPlot('p-noisy', [
+            truthTrace(),
+            scatter('Train', tr.map(p=>p.x), tr.map(p=>p.yn), C.train),
+            scatter('Test',  te.map(p=>p.x), te.map(p=>p.yn), C.test)
+        ], baseLayout(), PCFG);
+    }
+    function drawPredictionPair(model, leftDivId, rightDivId, useNoisy){
+        const tr=DATA.train, te=DATA.test;
+        const yKey = useNoisy ? 'yn' : 'y';
+        Plotly.newPlot(leftDivId, [
+            truthTrace(), predTrace(model),
+            scatter('Train', tr.map(p=>p.x), tr.map(p=>p[yKey]), C.train)
+        ], baseLayout(), PCFG);
+        Plotly.newPlot(rightDivId, [
+            truthTrace(), predTrace(model),
+            scatter('Test', te.map(p=>p.x), te.map(p=>p[yKey]), C.test)
+        ], baseLayout(), PCFG);
+    }
+    function setText(id,val){ const e=document.getElementById(id); if(e) e.textContent=val; }
+
+    function showLosses(){
+        const tr=DATA.train, te=DATA.test;
+        const xTr=tr.map(p=>p.x), xTe=te.map(p=>p.x);
+
+        const cTr = mse(modelClean, xTr, tr.map(p=>p.y));
+        const cTe = mse(modelClean, xTe, te.map(p=>p.y));
+        setText('mse-clean-train', fmt(cTr)); setText('mse-clean-train-ref', fmt(cTe));
+        setText('mse-clean-test', fmt(cTe));  setText('mse-clean-test-ref', fmt(cTr));
+
+        const bTr = mse(modelBest, xTr, tr.map(p=>p.yn));
+        const bTe = mse(modelBest, xTe, te.map(p=>p.yn));
+        setText('mse-best-train', fmt(bTr)); setText('mse-best-test-a', fmt(bTe));
+        setText('mse-best-train-b', fmt(bTr)); setText('mse-best-test', fmt(bTe));
+
+        const oTr = mse(modelOver, xTr, tr.map(p=>p.yn));
+        const oTe = mse(modelOver, xTe, te.map(p=>p.yn));
+        setText('mse-over-train', fmt(oTr)); setText('mse-over-test-a', fmt(oTe));
+        setText('mse-over-train-b', fmt(oTr)); setText('mse-over-test', fmt(oTe));
+
+        const ratio = (oTe/oTr);
+        document.getElementById('result-stats').innerHTML = `
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div class="font-mono text-[11px] uppercase tracking-wide text-gray-500">Clean · Train / Test</div>
+      <div class="font-mono text-xl font-semibold mt-1 text-gray-900">${fmt(cTr)} / ${fmt(cTe)}</div>
+      <div class="text-xs mt-1 font-semibold text-green-700">≈ gleich → kein Overfitting</div></div>
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div class="font-mono text-[11px] uppercase tracking-wide text-gray-500">Best · Train / Test</div>
+      <div class="font-mono text-xl font-semibold mt-1 text-gray-900">${fmt(bTr)} / ${fmt(bTe)}</div>
+      <div class="text-xs mt-1 font-semibold text-green-700">nahe V=0.05 → generalisiert</div></div>
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div class="font-mono text-[11px] uppercase tracking-wide text-gray-500">Over · Train / Test</div>
+      <div class="font-mono text-xl font-semibold mt-1 text-gray-900">${fmt(oTr)} / ${fmt(oTe)}</div>
+      <div class="text-xs mt-1 font-semibold text-amber-700">Train ≪ Test → Overfitting</div></div>
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div class="font-mono text-[11px] uppercase tracking-wide text-gray-500">Verhältnis Test/Train (Over)</div>
+      <div class="font-mono text-xl font-semibold mt-1 text-gray-900">${isFinite(ratio)?ratio.toFixed(1):'—'}×</div>
+      <div class="text-xs mt-1 font-semibold text-amber-700">je größer, desto stärker</div></div>`;
+    }
+
+    async function runAll(){
+        showOverlay();
+        const seed = parseInt(document.getElementById('in-seed').value)||42;
+        const N    = parseInt(document.getElementById('in-n').value)||100;
+        const V    = parseFloat(document.getElementById('in-var').value)||0.05;
+        const epC  = parseInt(document.getElementById('in-ep-clean').value)||250;
+        const epB  = parseInt(document.getElementById('in-ep-best').value)||120;
+        const epO  = parseInt(document.getElementById('in-ep-over').value)||3000;
+
+        setOverlay('Erzeuge Datensatz…','N='+N+', V='+V+', seed='+seed, 5);
+        await tf.nextFrame();
+        DATA = makeDataset(N, V, seed);
+        drawData();
+
+        [modelClean,modelBest,modelOver].forEach(m=>{ if(m) m.dispose(); });
+
+        const tr=DATA.train;
+        const xTr=tr.map(p=>p.x);
+
+        setOverlay('Trainiere Modell 1/3 — Clean','0 / '+epC+' Epochen', 10);
+        modelClean = buildModel();
+        await trainModel(modelClean, xTr, tr.map(p=>p.y), epC,
+            (e)=>setOverlay('Trainiere Modell 1/3 — Clean', e+' / '+epC+' Epochen', 10+25*e/epC));
+
+        setOverlay('Trainiere Modell 2/3 — Best-Fit','0 / '+epB+' Epochen', 38);
+        modelBest = buildModel();
+        await trainModel(modelBest, xTr, tr.map(p=>p.yn), epB,
+            (e)=>setOverlay('Trainiere Modell 2/3 — Best-Fit', e+' / '+epB+' Epochen', 38+22*e/epB));
+
+        setOverlay('Trainiere Modell 3/3 — Over-Fit','0 / '+epO+' Epochen', 60);
+        modelOver = buildModel();
+        await trainModel(modelOver, xTr, tr.map(p=>p.yn), epO,
+            (e)=>setOverlay('Trainiere Modell 3/3 — Over-Fit', e+' / '+epO+' Epochen', 60+38*e/epO));
+
+        setOverlay('Zeichne Resultate…','', 99);
+        await tf.nextFrame();
+        drawPredictionPair(modelClean,'p-clean-train','p-clean-test', false);
+        drawPredictionPair(modelBest, 'p-best-train', 'p-best-test',  true);
+        drawPredictionPair(modelOver, 'p-over-train', 'p-over-test',  true);
+        showLosses();
+
+        log('Lauf abgeschlossen. seed='+seed+' N='+N+' V='+V+
+            ' | Epochen C/B/O = '+epC+'/'+epB+'/'+epO);
+        hideOverlay();
+    }
+
+    /* =========================================================================
+       6) DEV-TOOLS
+       ========================================================================= */
+    function download(filename, text, mime='application/json'){
+        const blob=new Blob([text],{type:mime});
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+        if (typeof tf==='undefined' || typeof Plotly==='undefined'){
+            setOverlay('Fehler: Bibliotheken nicht geladen','CDN prüfen / Internetverbindung?',0);
+            return;
+        }
+
+        // Pfeil im Dev-Tools-Summary umschalten
+        const dev = document.querySelector('details');
+        if (dev){
+            const sum = dev.querySelector('summary');
+            const sync = ()=>{ sum.textContent = (dev.open?'▾ ':'▸ ')+'Entwickler-Werkzeuge — Datensatz / Training / Modell / Test'; };
+            dev.addEventListener('toggle', sync); sync();
+        }
+
+        document.getElementById('btn-regen').onclick   = ()=> runAll();
+        document.getElementById('btn-retrain').onclick = ()=> runAll();
+
+        document.getElementById('btn-save-data').onclick = ()=>{
+            if(!DATA){log('kein Datensatz.');return;}
+            download('dataset.json', JSON.stringify(DATA,null,2));
+            log('Datensatz gespeichert (dataset.json).');
+        };
+        document.getElementById('btn-load-data').onclick = ()=> document.getElementById('file-data').click();
+        document.getElementById('file-data').onchange = (ev)=>{
+            const f=ev.target.files[0]; if(!f)return;
+            const r=new FileReader();
+            r.onload = ()=>{ try{
+                DATA=JSON.parse(r.result); drawData(); log('Datensatz geladen ('+f.name+'). Bitte Modelle neu trainieren!');
+            }catch(e){ log('Ladefehler: '+e.message); } };
+            r.readAsText(f);
+        };
+
+        document.getElementById('btn-visor').onclick = ()=>{
+            visorOn=!visorOn;
+            if (typeof tfvis!=='undefined'){ tfvis.visor().toggle(); }
+            log('TF-Visor '+(visorOn?'aktiviert (wirkt beim nächsten Training)':'deaktiviert')+'.');
+        };
+
+        document.getElementById('btn-save-model').onclick = async ()=>{
+            if(!modelBest){log('kein Best-Modell.');return;}
+            await modelBest.save('downloads://best-fit-model');
+            log('Best-Modell gespeichert (best-fit-model.json + .weights.bin).');
+        };
+        document.getElementById('btn-load-model').onclick = ()=> document.getElementById('file-model').click();
+        document.getElementById('file-model').onchange = async (ev)=>{
+            const files=[...ev.target.files];
+            const json=files.find(f=>f.name.endsWith('.json'));
+            const bin =files.find(f=>f.name.endsWith('.bin'));
+            if(!json||!bin){log('Bitte .json UND .weights.bin auswählen.');return;}
+            try{
+                modelBest = await tf.loadLayersModel(tf.io.browserFiles([json,bin]));
+                modelBest.compile({optimizer:tf.train.adam(0.01), loss:'meanSquaredError'});
+                if(DATA){ drawPredictionPair(modelBest,'p-best-train','p-best-test',true); showLosses(); }
+                log('Best-Modell geladen und angewandt.');
+            }catch(e){ log('Modell-Ladefehler: '+e.message); }
+        };
+
+        document.getElementById('btn-test').onclick = ()=>{
+            if(!modelBest||!DATA){log('erst trainieren.');return;}
+            const rng=mulberry32(Date.now()&0xffffffff);
+            const std=Math.sqrt(DATA.meta.variance);
+            const xs=[],t=[];
+            for(let i=0;i<200;i++){ const x=-2+4*rng(); xs.push(x); t.push(groundTruth(x)+gauss(rng,0,std)); }
+            log('QA-Test (200 neue Zufallspunkte, mit Rauschen): MSE_best = '+fmt(mse(modelBest, xs, t)));
+        };
+
+        window.addEventListener('resize', ()=>{ if(DATA) drawData(); });
+
+        runAll();   // Auto-Start
+    });
+</script>
 
 </body>
 </html>
+
