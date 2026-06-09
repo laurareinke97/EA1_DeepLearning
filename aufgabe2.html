@@ -10,7 +10,6 @@
         tailwind.config = { theme: { extend: { colors: { primary: '#166534' } } } };
     </script>
 
-    <!-- Bibliotheken -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@1.5.1/dist/tfjs-vis.umd.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -24,6 +23,10 @@
         .spinner{width:46px;height:46px;border:3px solid #d1d5db;border-top-color:#166534;
             border-radius:50%;animation:spin .9s linear infinite;margin-bottom:20px}
         @keyframes spin{to{transform:rotate(360deg)}}
+        details.dev>summary{list-style:none}
+        details.dev>summary::-webkit-details-marker{display:none}
+        details.dev>summary::before{content:"▸ ";color:#166534}
+        details.dev[open]>summary::before{content:"▾ ";color:#166534}
     </style>
 </head>
 
@@ -57,8 +60,8 @@
     <h2 class="text-2xl font-bold text-primary mb-2">Aufgabe 2</h2>
     <p class="text-gray-600 max-w-3xl mb-3">
         Regression einer unbekannten, verrauschten Funktion mit einem Feed-Forward Neural Network
-        (TensorFlow.js). Drei Modelle werden beim Laden im Browser trainiert &ndash; rauschfrei,
-        Best-Fit und Over-Fit &ndash; und das Phänomen Overfitting sichtbar gemacht.
+        (TensorFlow.js). Drei Modelle werden beim Laden im Browser trainiert rauschfrei,
+        Best-Fit und Over-Fit und das Overfitting sichtbar gemacht.
     </p>
     <div class="font-mono text-sm bg-white border border-gray-200 border-l-4 border-l-green-700 rounded px-4 py-3 mb-2 overflow-x-auto">
         Ground&nbsp;Truth&nbsp; y(x) = 0.5·(x+0.8)·(x+1.8)·(x−0.2)·(x−0.3)·(x−1.9) + 1 &nbsp;,&nbsp; x ∈ [−2, +2]
@@ -72,7 +75,7 @@
         </div>
         <p class="text-gray-600 max-w-3xl mb-4">
             N = 100 gleichverteilte x-Werte aus [−2, 2], aufgeteilt in 50 Trainings- und 50 Testpaare.
-            Links rauschfrei (exakt auf der Ground&nbsp;Truth), rechts mit Gauß'schem Label-Rauschen
+            Links rauschfrei (exakt auf der Ground Truth), rechts mit Gauß'schem Label-Rauschen
             (Varianz V = 0.05, σ = √0.05 ≈ 0.224). Nur der Output wird verrauscht.
         </p>
         <div class="flex flex-wrap gap-5 text-sm text-gray-600 mb-4">
@@ -90,6 +93,25 @@
                 <div id="p-noisy" class="plot"></div>
             </div>
         </div>
+        <details class="dev mt-4 border border-dashed border-gray-300 rounded-lg bg-white/70">
+            <summary class="cursor-pointer px-4 py-2.5 font-mono text-xs font-semibold tracking-wide text-gray-500 select-none">Werkzeuge · Daten erzeugen / speichern / laden</summary>
+            <div class="px-4 pb-4 pt-2 border-t border-gray-200">
+                <div class="flex flex-wrap gap-3 items-end">
+                    <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Seed
+                        <input id="in-seed" type="number" value="42" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+                    <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">N gesamt
+                        <input id="in-n" type="number" value="100" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+                    <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Varianz V
+                        <input id="in-var" type="number" value="0.05" step="0.01" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+                    <button id="btn-regen" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Daten neu erzeugen &amp; alles trainieren</button>
+                    <button id="btn-save-data" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Datensatz speichern</button>
+                    <button id="btn-load-data" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Datensatz laden</button>
+                    <button id="btn-visor" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">TF-Visor an/aus</button>
+                    <input type="file" id="file-data" accept="application/json" class="hidden">
+                </div>
+                <div id="dev-log" class="dev-log font-mono text-xs whitespace-pre-wrap bg-gray-900 text-green-200 rounded-lg px-4 py-3 mt-3 max-h-40 overflow-auto leading-relaxed">bereit.</div>
+            </div>
+        </details>
     </section>
 
     <!-- ====== R2 ====== -->
@@ -127,6 +149,16 @@
                 </div>
             </div>
         </div>
+        <details class="dev mt-4 border border-dashed border-gray-300 rounded-lg bg-white/70">
+            <summary class="cursor-pointer px-4 py-2.5 font-mono text-xs font-semibold tracking-wide text-gray-500 select-none">Werkzeuge · dieses Modell (Clean) trainieren</summary>
+            <div class="px-4 pb-4 pt-2 border-t border-gray-200">
+                <div class="flex flex-wrap gap-3 items-end">
+                    <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Epochen
+                        <input id="in-ep-clean" type="number" value="250" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+                    <button id="btn-train-clean" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Clean-Modell neu trainieren</button>
+                </div>
+            </div>
+        </details>
     </section>
 
     <!-- ====== R3 ====== -->
@@ -164,6 +196,21 @@
                 </div>
             </div>
         </div>
+        <details class="dev mt-4 border border-dashed border-gray-300 rounded-lg bg-white/70">
+            <summary class="cursor-pointer px-4 py-2.5 font-mono text-xs font-semibold tracking-wide text-gray-500 select-none">Werkzeuge · Best-Modell trainieren / speichern / testen</summary>
+            <div class="px-4 pb-4 pt-2 border-t border-gray-200">
+                <div class="flex flex-wrap gap-3 items-end">
+                    <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Epochen
+                        <input id="in-ep-best" type="number" value="120" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+                    <button id="btn-train-best" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Best-Modell neu trainieren</button>
+                    <button id="btn-save-model" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Modell speichern</button>
+                    <button id="btn-load-model" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Modell laden</button>
+                    <button id="btn-test" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Auf neuen Zufallsdaten testen</button>
+                    <input type="file" id="file-model" accept=".json,.bin" multiple class="hidden">
+                </div>
+                <div id="dev-log-2" class="dev-log font-mono text-xs whitespace-pre-wrap bg-gray-900 text-green-200 rounded-lg px-4 py-3 mt-3 max-h-40 overflow-auto leading-relaxed">bereit.</div>
+            </div>
+        </details>
     </section>
 
     <!-- ====== R4 ====== -->
@@ -173,7 +220,7 @@
             <h3 class="text-xl font-bold text-gray-900">Over-Fit-Modell — y<sub>overfit</sub>(x)</h3>
         </div>
         <p class="text-gray-600 max-w-3xl mb-4">
-            Dasselbe Netz, dieselben verrauschten Trainingsdaten, aber <em>sehr lange</em> trainiert. Das
+            Dasselbe Netz, dieselben verrauschten Trainingsdaten, aber sehr lange trainiert. Das
             überparametrisierte Netz „merkt“ sich das Rauschen der Trainingspunkte: Trainings-Loss sehr klein,
             Test-Loss steigt → Loss<sub>train</sub> ≪ Loss<sub>test</sub>.
         </p>
@@ -201,6 +248,16 @@
                 </div>
             </div>
         </div>
+        <details class="dev mt-4 border border-dashed border-gray-300 rounded-lg bg-white/70">
+            <summary class="cursor-pointer px-4 py-2.5 font-mono text-xs font-semibold tracking-wide text-gray-500 select-none">Werkzeuge · Over-Modell trainieren</summary>
+            <div class="px-4 pb-4 pt-2 border-t border-gray-200">
+                <div class="flex flex-wrap gap-3 items-end">
+                    <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Epochen
+                        <input id="in-ep-over" type="number" value="3000" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+                    <button id="btn-train-over" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Over-Modell neu trainieren</button>
+                </div>
+            </div>
+        </details>
     </section>
 
     <!-- ====== DISKUSSION ====== -->
@@ -214,19 +271,19 @@
 
         <div class="max-w-3xl text-gray-700 leading-relaxed">
             <p>
-                <strong>Beobachtung.</strong> Ohne Rauschen (R2) stimmen Trainings- und Test-Loss nahezu überein, weil es
-                nichts Zufälliges zu „merken“ gibt &ndash; die Daten enthalten reines Signal, also kann das Modell nur die
-                Funktion selbst lernen. Auf den verrauschten Daten erreicht das Best-Fit-Modell (R3) einen Test-Loss nahe der
-                theoretischen Untergrenze V ≈ 0.05 (die Rausch-Varianz, die selbst ein perfektes Modell nicht unterschreiten
-                kann), Train- und Test-Loss bleiben dicht beieinander. Das Over-Fit-Modell (R4) drückt den Trainings-Loss
-                durch sehr langes Training weit unter diese Grenze, weil das überparametrisierte Netz (2×100 Neuronen,
-                ≈ 10 k Gewichte für nur 50 Punkte) das Rauschen der einzelnen Trainingspunkte nachbildet; auf den unabhängigen
-                Testdaten verschlechtert sich der Loss dadurch sichtbar. Genau dieser wachsende Abstand zwischen Train- und
-                Test-Loss ist Overfitting. Lernrate (Adam, 0.01) und Batch-Size (32) stammen aus der Vorgabe; allein über die
-                Epochen-Zahl steuern wir Best-Fit gegen Over-Fit. Die Testdaten wurden bewusst <em>nie</em> zum Trainieren
-                oder zur Wahl der Epochen verwendet, damit sie ein unabhängiges Maß bleiben. Kernlektion: mehr Training senkt
-                immer den Trainings-Fehler, aber nicht zwangsläufig den Generalisierungsfehler &ndash; entscheidend ist der
-                Loss auf ungesehenen Daten.
+                <strong>Beobachtungen.</strong> Beim Modell ohne Rauschen (R2) liegen Trainings- und Test-Fehler
+                erwartungsgemäß nahezu gleichauf, da es ohne zufällige Schwankungen nichts gibt, das auswendig gelernt
+                werden könnte. Auf den verrauschten Daten nähert sich mein bestes Modell (R3) im Test der Untergrenze
+                von etwa 0.05 an; dieser Wert entspricht der Varianz des Rauschens und kann von keinem Modell
+                unterschritten werden. Beim übertrainierten Modell (R4) fällt der Trainings-Fehler dagegen deutlich
+                darunter, weil das Netz mit seinen vielen Parametern (2×100 Neuronen bei nur 50 Datenpunkten) genug
+                Kapazität besitzt, um sich einzelne Punkte einzuprägen auf den Testdaten verschlechtert sich das
+                Ergebnis entsprechend. Den Übergang von guter Generalisierung zu Overfitting konnte ich im Wesentlichen
+                über die Anzahl der Trainings-Epochen steuern; Lernrate und Batch-Größe habe ich wie vorgegeben belassen.
+                Wichtig war mir, die Testdaten ausschließlich zur Bewertung einzusetzen und nicht zur Wahl der Epochen,
+                da sie andernfalls ihre Unabhängigkeit verlieren würden. Die zentrale Erkenntnis ist für mich, dass ein
+                kleinerer Trainings-Fehler nicht automatisch ein besseres Modell bedeutet entscheidend ist der
+                Fehler auf ungesehenen Daten.
             </p>
         </div>
     </section>
@@ -241,76 +298,47 @@
             <h4 class="font-bold text-lg text-gray-900 mt-2">1 · Technisch</h4>
             <ul class="list-disc pl-5 space-y-1">
                 <li><strong>TensorFlow.js (4.22):</strong> definiert das Sequential-Modell, Forward-/Backprop, Adam-Optimizer,
-                    MSE-Loss und Vorhersagen &ndash; vollständig clientseitig im Browser, ohne Server.</li>
+                    MSE-Loss und Vorhersagen vollständig clientseitig im Browser, ohne Server.</li>
                 <li><strong>tfjs-vis (1.5):</strong> optionaler „Visor“ zur Live-Visualisierung der Loss-Kurven während des
                     Trainings (über die Dev-Tools aktivierbar).</li>
                 <li><strong>Plotly.js (2.35):</strong> rendert alle Streudiagramme und die Vorhersagekurven (dichtes x-Gitter).</li>
                 <li><strong>Tailwind CSS</strong> für Layout und Gestaltung (konsistent mit dem restlichen Auftritt).</li>
             </ul>
-            <p><strong>Technische Besonderheiten.</strong> (a) <em>Keine Normalisierung</em> von In-/Output: x ∈ [−2,2] ist
-                gut skaliert, und der Output-Layer nutzt eine <code class="font-mono bg-gray-100 px-1 rounded">linear</code>e
-                Aktivierung, deren Wertebereich (ℝ) zur Zielmenge passt &ndash; eine auf [0,1] beschränkte Aktivierung wäre
-                falsch. (b) Ein seedbarer PRNG (mulberry32) macht die Datenerzeugung reproduzierbar; das Gauß'sche Rauschen
-                entsteht per Box-Muller-Transformation. (c) Tensoren werden mit
-                <code class="font-mono bg-gray-100 px-1 rounded">tf.tidy()</code> entsorgt. (d) Alle drei Modelle werden beim
-                Laden trainiert; ein Overlay zeigt den Fortschritt, danach werden alle Diagramme dynamisch befüllt.</p>
+            <p><strong>Technische Besonderheiten</strong> (a) Ich verzichte bewusst auf eine Normalisierung
+                von Ein- und Ausgabe: Die x-Werte liegen bereits im gut skalierten Bereich [−2, 2], und das
+                Ausgabe-Neuron nutzt eine lineare Aktivierung, deren Wertebereich (ℝ) zur Zielgröße passt eine
+                auf [0, 1] beschränkte Aktivierung wäre hier ungeeignet, da y auch größere und negative Werte annimmt.
+                (b) Ein seedbarer Zufallsgenerator (mulberry32) macht die Datenerzeugung reproduzierbar; das
+                normalverteilte Rauschen erzeuge ich daraus mit der Box-Muller-Transformation. (c) Tensoren gebe ich
+                mit <code class="font-mono bg-gray-100 px-1 rounded">tf.tidy()</code> wieder frei, um den Speicher nicht
+                unnötig zu belasten. (d) Alle drei Modelle werden beim Laden trainiert; während des Trainings zeigt ein
+                Overlay den Fortschritt an, anschließend werden die Diagramme automatisch befüllt.</p>
 
             <h4 class="font-bold text-lg text-gray-900 mt-4">2 · Fachlich</h4>
-            <p><strong>Datenpipeline.</strong> 100 gleichverteilte x → exaktes y(x) → zufälliges 50/50-Split →
-                additives Label-Rauschen N(0, V=0.05), also σ = √0.05. Wichtig: V ist die <em>Varianz</em>, nicht die
-                Standardabweichung &ndash; ein häufiger Fehler ist, 0.05 direkt als σ zu nehmen.</p>
-            <p><strong>Modell.</strong>
+            <p><strong>Datenerzeugung.</strong> 100 gleichverteilte x-Werte → die exakten y(x) → zufällige
+                Aufteilung in je 50 Trainings- und Testpunkte → additives Rauschen auf die y-Werte. Ein wichtiger
+                Punkt dabei: V = 0.05 ist die Varianz, nicht die Standardabweichung. Für das Rauschen benötige
+                ich die Standardabweichung σ = √V ≈ 0.224; würde ich 0.05 direkt als σ verwenden, fiele das Rauschen
+                deutlich zu schwach aus.</p>
+            <p><strong>Das Modell.</strong>
                 <code class="font-mono bg-gray-100 px-1 rounded">Dense(100, relu) → Dense(100, relu) → Dense(1, linear)</code>,
-                Loss = MSE, Optimizer = Adam(lr=0.01), Batch-Size = 32. ReLU-Schichten erlauben eine stückweise-lineare
-                Approximation beliebiger stetiger Funktionen, der lineare Output deckt den vollen Wertebereich ab.</p>
-            <p><strong>Drei Modelle.</strong> <em>Clean</em> (Referenz, kein Overfitting möglich), <em>Best-Fit</em>
-                (moderate Epochen, gute Generalisierung) und <em>Over-Fit</em> (sehr viele Epochen, lernt Rauschen auswendig).
-                Die Epochen-Zahlen wurden offline experimentell festgelegt &ndash; <strong>ohne</strong> die Testdaten, da
-                diese unabhängig bleiben müssen (kein Early-Stopping über das Testset).</p>
-            <p><strong>Resultate &amp; QA.</strong> Jeder MSE-Wert wird direkt aus Vorhersage vs. Ziel der dargestellten
-                Teilmenge berechnet, sodass Zahl und Diagramm konsistent sind. Über die Dev-Tools lassen sich Daten neu
-                erzeugen, speichern/laden, Epochen ändern, Modelle speichern/laden und auf frischen Zufallsdaten testen.
-                <strong>Quellen:</strong> TensorFlow.js-Tutorial „Making predictions from 2D data“, TFJS-API-Doku, Box-Muller
-                (Zentraler Grenzwertsatz).</p>
+                mit dem Mean&nbsp;Squared&nbsp;Error (MSE) als Verlustfunktion und Adam (Lernrate 0.01, Batch-Größe 32)
+                als Optimierer. Die beiden ReLU-Schichten setzen aus stückweise linearen Abschnitten eine beliebig
+                gekrümmte Funktion zusammen, während das lineare Ausgabe-Neuron den vollen Wertebereich der Zielgröße
+                abdeckt.</p>
+            <p><strong>Die drei Modelle.</strong> <em>Clean</em> als Referenz (Overfitting ausgeschlossen),
+                <em>Best-Fit</em> mit moderater Epochen-Zahl (gute Generalisierung) und <em>Over-Fit</em> mit hoher
+                Epochen-Zahl (lernt das Rauschen auswendig). Die jeweiligen Epochen-Zahlen habe ich vorab experimentell
+                bestimmt  bewusst ohne Rückgriff auf die Testdaten, da diese unabhängig bleiben
+                müssen (kein Early-Stopping über das Testset).</p>
+            <p><strong>Ergebnisse und Tests.</strong> Jeder MSE-Wert wird direkt aus den im jeweiligen Diagramm
+                dargestellten Punkten berechnet, sodass Zahl und Visualisierung stets übereinstimmen. Über die
+                Werkzeug-Panels unter den jeweiligen Diagrammen lassen sich Daten neu erzeugen, speichern und laden,
+                Epochen anpassen, Modelle speichern und laden sowie auf neu erzeugten Zufallsdaten testen.
+                <strong>Quellen:</strong> TensorFlow.js-Tutorial „Making predictions from 2D data“, die
+                TFJS-Dokumentation sowie die Box-Muller-Transformation (Zentraler Grenzwertsatz).</p>
         </div>
 
-        <!-- ====== DEV-TOOLS ====== -->
-        <details class="mt-8 border border-dashed border-gray-300 rounded-xl bg-white">
-            <summary class="cursor-pointer px-5 py-4 font-mono font-semibold text-sm tracking-wide select-none">
-                ▸ Entwickler-Werkzeuge — Datensatz / Training / Modell / Test
-            </summary>
-            <div class="px-5 pb-6 pt-1 border-t border-gray-200">
-                <div class="flex flex-wrap gap-3 items-end my-4">
-                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Seed
-                        <input id="in-seed" type="number" value="42" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
-                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">N (gesamt)
-                        <input id="in-n" type="number" value="100" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
-                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Varianz V
-                        <input id="in-var" type="number" step="0.01" value="0.05" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
-                    <button id="btn-regen" class="font-mono text-sm font-semibold px-4 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Daten neu erzeugen</button>
-                    <button id="btn-save-data" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Datensatz speichern</button>
-                    <button id="btn-load-data" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Datensatz laden</button>
-                    <input type="file" id="file-data" accept="application/json" class="hidden">
-                </div>
-                <div class="flex flex-wrap gap-3 items-end my-4">
-                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Epochen Clean
-                        <input id="in-ep-clean" type="number" value="250" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
-                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Epochen Best
-                        <input id="in-ep-best" type="number" value="120" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
-                    <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Epochen Over
-                        <input id="in-ep-over" type="number" value="3000" class="font-mono text-sm w-28 px-2.5 py-2 border border-gray-300 rounded-md"></label>
-                    <button id="btn-retrain" class="font-mono text-sm font-semibold px-4 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Modelle neu trainieren</button>
-                    <button id="btn-visor" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">TF-Visor an/aus</button>
-                </div>
-                <div class="flex flex-wrap gap-3 items-end my-4">
-                    <button id="btn-save-model" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Best-Modell speichern</button>
-                    <button id="btn-load-model" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Best-Modell laden</button>
-                    <input type="file" id="file-model" accept=".json,.bin" multiple class="hidden">
-                    <button id="btn-test" class="font-mono text-sm font-semibold px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Auf neuen Zufallsdaten testen</button>
-                </div>
-                <div id="dev-log" class="font-mono text-xs whitespace-pre-wrap bg-gray-900 text-green-200 rounded-lg px-4 py-3 mt-3 max-h-52 overflow-auto leading-relaxed">bereit.</div>
-            </div>
-        </details>
     </section>
 
     <p class="text-xs font-mono text-gray-500 pt-6">
@@ -342,7 +370,7 @@
     const fmt = v => (v==null || isNaN(v)) ? "—" : v.toFixed(4);
 
     /* =========================================================================
-       1) GROUND TRUTH (unbekannte, zu lernende Funktion)
+       1) GROUND TRUTH
        ========================================================================= */
     function groundTruth(x){
         return 0.5*(x+0.8)*(x+1.8)*(x-0.2)*(x-0.3)*(x-1.9) + 1;
@@ -353,13 +381,13 @@
        ========================================================================= */
     function makeDataset(N, variance, seed){
         const rng = mulberry32(seed);
-        const std = Math.sqrt(variance);                 // V ist Varianz → sigma = sqrt(V)
+        const std = Math.sqrt(variance);
         let pts = [];
         for (let i=0;i<N;i++){
             const x = -2 + 4*rng();
             pts.push({x, y: groundTruth(x)});
         }
-        for (let i=pts.length-1;i>0;i--){                // Fisher-Yates mischen
+        for (let i=pts.length-1;i>0;i--){
             const j = Math.floor(rng()*(i+1));
             [pts[i],pts[j]] = [pts[j],pts[i]];
         }
@@ -452,8 +480,7 @@
     function hideOverlay(){ document.getElementById('overlay').classList.add('hidden'); }
     function showOverlay(){ document.getElementById('overlay').classList.remove('hidden'); }
     function log(msg){
-        const el=document.getElementById('dev-log');
-        el.textContent += '\n'+msg; el.scrollTop=el.scrollHeight;
+        document.querySelectorAll('.dev-log').forEach(el=>{ el.textContent += '\n'+msg; el.scrollTop=el.scrollHeight; });
     }
 
     function drawData(){
@@ -578,22 +605,38 @@
         URL.revokeObjectURL(a.href);
     }
 
+    // trainiert nur ein Modell neu
+    async function trainOne(kind){
+        if(!DATA){ log('Bitte zuerst Daten erzeugen.'); return; }
+        const cfg = {
+            clean:{ep:parseInt(document.getElementById('in-ep-clean').value)||250, key:'y',  l:'p-clean-train', r:'p-clean-test', noisy:false, name:'Clean',    set:m=>modelClean=m, old:()=>modelClean},
+            best: {ep:parseInt(document.getElementById('in-ep-best').value)||120,  key:'yn', l:'p-best-train',  r:'p-best-test',  noisy:true,  name:'Best-Fit', set:m=>modelBest=m,  old:()=>modelBest},
+            over: {ep:parseInt(document.getElementById('in-ep-over').value)||3000, key:'yn', l:'p-over-train',  r:'p-over-test',  noisy:true,  name:'Over-Fit', set:m=>modelOver=m,  old:()=>modelOver}
+        }[kind];
+        showOverlay();
+        const tr=DATA.train, xTr=tr.map(p=>p.x);
+        const oldM=cfg.old(); if(oldM) oldM.dispose();
+        setOverlay('Trainiere '+cfg.name+'-Modell','0 / '+cfg.ep+' Epochen', 5);
+        const m=buildModel();
+        await trainModel(m, xTr, tr.map(p=>p[cfg.key]), cfg.ep,
+            (e)=>setOverlay('Trainiere '+cfg.name+'-Modell', e+' / '+cfg.ep+' Epochen', 5+90*e/cfg.ep));
+        cfg.set(m);
+        drawPredictionPair(m, cfg.l, cfg.r, cfg.noisy);
+        showLosses();
+        log(cfg.name+'-Modell neu trainiert ('+cfg.ep+' Epochen).');
+        hideOverlay();
+    }
+
     window.addEventListener('DOMContentLoaded', ()=>{
         if (typeof tf==='undefined' || typeof Plotly==='undefined'){
             setOverlay('Fehler: Bibliotheken nicht geladen','CDN prüfen / Internetverbindung?',0);
             return;
         }
 
-        // Pfeil im Dev-Tools-Summary umschalten
-        const dev = document.querySelector('details');
-        if (dev){
-            const sum = dev.querySelector('summary');
-            const sync = ()=>{ sum.textContent = (dev.open?'▾ ':'▸ ')+'Entwickler-Werkzeuge — Datensatz / Training / Modell / Test'; };
-            dev.addEventListener('toggle', sync); sync();
-        }
-
-        document.getElementById('btn-regen').onclick   = ()=> runAll();
-        document.getElementById('btn-retrain').onclick = ()=> runAll();
+        document.getElementById('btn-regen').onclick = ()=> runAll();
+        document.getElementById('btn-train-clean').onclick = ()=> trainOne('clean');
+        document.getElementById('btn-train-best').onclick  = ()=> trainOne('best');
+        document.getElementById('btn-train-over').onclick  = ()=> trainOne('over');
 
         document.getElementById('btn-save-data').onclick = ()=>{
             if(!DATA){log('kein Datensatz.');return;}
@@ -652,4 +695,3 @@
 
 </body>
 </html>
-
