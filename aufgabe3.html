@@ -500,9 +500,9 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich sc
 
       lossHist=[];vlossHist=[];accHist=[];vaccHist=[];epochHist=[];
       const xs=tf.tensor2d(trainX,[trainX.length,SEQ_LEN],'int32');
-      const ys=tf.tensor1d(trainY,'int32');
+      const ys=tf.tensor1d(trainY,'float32');
       let vxs=null,vys=null,valData;
-      if(valX.length){ vxs=tf.tensor2d(valX,[valX.length,SEQ_LEN],'int32'); vys=tf.tensor1d(valY,'int32'); valData=[vxs,vys]; }
+      if(valX.length){ vxs=tf.tensor2d(valX,[valX.length,SEQ_LEN],'int32'); vys=tf.tensor1d(valY,'float32'); valData=[vxs,vys]; }
 
       const cbs=[];
       if(visorOn && typeof tfvis!=='undefined'){
