@@ -69,6 +69,7 @@
   <div class="font-mono text-sm bg-white border border-gray-200 border-l-4 border-l-green-700 rounded px-4 py-3 mb-2 overflow-x-auto">
     Modell&nbsp; Embedding(|V|, d) → LSTM(100, seq) → LSTM(100) → Dense(|V|, softmax) &nbsp;,&nbsp; Loss = Cross-Entropy &nbsp;,&nbsp; Adam
   </div>
+  <div id="errBanner" class="hidden text-sm bg-red-50 border border-red-300 text-red-800 rounded px-4 py-3 mb-4 font-mono"></div>
 
   <!-- ====== R1 · DATEN ====== -->
   <section class="py-9 border-b border-gray-200">
@@ -369,6 +370,8 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich sc
   }
   function showOverlay(){ $('overlay').classList.remove('hidden'); }
   function hideOverlay(){ $('overlay').classList.add('hidden'); }
+  function showError(msg){ const b=$('errBanner'); if(b){ b.textContent=msg; b.classList.remove('hidden'); } }
+  function clearError(){ const b=$('errBanner'); if(b) b.classList.add('hidden'); }
   function log(msg){ document.querySelectorAll('.dev-log').forEach(el=>{ el.textContent+='\n'+msg; el.scrollTop=el.scrollHeight; }); }
   function clampInt(v,lo,hi,def){ const n=parseInt(v,10); if(isNaN(n))return def; return Math.min(hi,Math.max(lo,n)); }
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -417,8 +420,19 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich sc
     m.add(tf.layers.embedding({inputDim:vocabSize,outputDim:embDim,inputLength:SEQ_LEN}));
     for(let l=0;l<nLayers;l++) m.add(tf.layers.lstm({units,returnSequences:(l<nLayers-1)}));
     m.add(tf.layers.dense({units:vocabSize,activation:'softmax'}));
-    m.compile({optimizer:tf.train.adam(lr),loss:'sparseCategoricalCrossentropy',metrics:['accuracy']});
+    m.compile({optimizer:tf.train.adam(lr),loss:'sparseCategoricalCrossentropy'});
     return m;
+  }
+
+  function quickAcc(X,Y){
+    if(!X||!X.length) return null;
+    return tf.tidy(()=>{
+      const xs=tf.tensor2d(X,[X.length,SEQ_LEN],'int32');
+      const pred=model.predict(xs);
+      const am=pred.argMax(-1).cast('int32');
+      const yt=tf.tensor1d(Y,'int32');
+      return am.equal(yt).cast('float32').mean().dataSync()[0];
+    });
   }
 
   /* =========================================================================
@@ -458,6 +472,7 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich sc
      ========================================================================= */
   async function runAll(){
     try{
+      clearError();
       showOverlay();
       SEQ_LEN     = clampInt($('in-seq').value,2,12,5);
       const embDim= clampInt($('in-emb').value,8,256,48);
@@ -491,17 +506,19 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich sc
 
       const cbs=[];
       if(visorOn && typeof tfvis!=='undefined'){
-        cbs.push(tfvis.show.fitCallbacks({name:'Verlust & Genauigkeit',tab:'Training'},['loss','val_loss','acc','val_acc'],{callbacks:['onEpochEnd']}));
+        cbs.push(tfvis.show.fitCallbacks({name:'Verlust',tab:'Training'},['loss','val_loss'],{callbacks:['onEpochEnd']}));
       }
       let batchCounter=0;
       cbs.push({
         onEpochEnd:async(epoch,logs)=>{
           epochHist.push(epoch+1);
           lossHist.push(logs.loss); vlossHist.push(logs.val_loss??null);
-          accHist.push(logs.acc);   vaccHist.push(logs.val_acc??null);
+          accHist.push(quickAcc(trainX,trainY));
+          vaccHist.push(valX.length?quickAcc(valX,valY):null);
           setOverlay('Trainiere Modell …',
                   `Epoche ${epoch+1}/${epochs} · Loss ${logs.loss.toFixed(3)}`+(logs.val_loss!==undefined?` · Val ${logs.val_loss.toFixed(3)}`:''),
                   5+90*(epoch+1)/epochs);
+          if((epoch+1)%5===0||epoch===epochs-1) drawTrainingCurves();
           await tf.nextFrame();
         },
         onBatchEnd:async()=>{ if((++batchCounter%25)===0) await tf.nextFrame(); }
@@ -519,6 +536,7 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich sc
       hideOverlay();
     }catch(err){
       console.error(err); hideOverlay(); log('Fehler beim Training: '+err.message);
+      showError('Training fehlgeschlagen: '+err.message+' — Details in der Browser-Konsole (F12).');
     }
   }
 
