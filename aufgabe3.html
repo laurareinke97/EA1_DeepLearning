@@ -4,7 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aufgabe 3</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { primary: '#166534' } } } };
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@1.5.1/dist/tfjs-vis.umd.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+  <style>
+    .plot{width:100%;height:330px}
+    #overlay{position:fixed;inset:0;z-index:50;background:rgba(243,244,246,.95);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      backdrop-filter:blur(2px);transition:opacity .5s}
+    #overlay.hidden{opacity:0;pointer-events:none}
+    .spinner{width:46px;height:46px;border:3px solid #d1d5db;border-top-color:#166534;
+      border-radius:50%;animation:spin .9s linear infinite;margin-bottom:20px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    details.dev>summary{list-style:none}
+    details.dev>summary::-webkit-details-marker{display:none}
+    details.dev>summary::before{content:"▸ ";color:#166534}
+    details.dev[open]>summary::before{content:"▾ ";color:#166534}
+    .chip{position:relative}
+    .chip>.bar{position:absolute;left:0;bottom:0;height:3px;background:#15803d;border-top-right-radius:3px}
+  </style>
 </head>
 
 <body class="bg-gray-100 text-gray-800">
@@ -17,15 +42,735 @@
       <a href="index.html">Start</a>
       <a href="aufgabe1.html">Aufgabe 1</a>
       <a href="aufgabe2.html">Aufgabe 2</a>
-      <a href="aufgabe3.html" class="underline" >Aufgabe 3</a>
+      <a href="aufgabe3.html" class="underline">Aufgabe 3</a>
     </nav>
   </div>
 </header>
 
-<main class="max-w-4xl mx-auto p-6">
-  <h2 class="text-2xl font-bold text-primary mb-4">Aufgabe 3</h2>
-  <p>Hier entsteht Aufgabe 3</p>
+<!-- ====== LADE-OVERLAY ====== -->
+<div id="overlay">
+  <div class="spinner"></div>
+  <div id="ov-status" class="font-mono text-sm text-gray-800">Initialisiere&hellip;</div>
+  <div id="ov-detail" class="font-mono text-xs text-gray-500 mt-1">&nbsp;</div>
+  <div class="w-72 h-1.5 bg-gray-300 rounded mt-5 overflow-hidden">
+    <i id="ov-bar" class="block h-full w-0 bg-green-700 transition-all duration-200"></i>
+  </div>
+</div>
+
+<main class="max-w-5xl mx-auto p-6">
+
+  <h2 class="text-2xl font-bold text-primary mb-2">Aufgabe 3</h2>
+  <p class="text-gray-600 max-w-3xl mb-3">
+    Sprachmodell zur Wortvorhersage (Next Word Prediction) mit einem <strong>Stacked-LSTM</strong> (TensorFlow.js).
+    Das Modell wird beim Laden im Browser auf einem deutschen Text trainiert und sagt anschließend autoregressiv
+    das jeweils nächste Wort voraus. Der Nutzer kann interaktiv Wörter übernehmen, automatisch generieren lassen
+    und die Modellgüte messen.
+  </p>
+  <div class="font-mono text-sm bg-white border border-gray-200 border-l-4 border-l-green-700 rounded px-4 py-3 mb-2 overflow-x-auto">
+    Modell&nbsp; Embedding(|V|, d) → LSTM(100, seq) → LSTM(100) → Dense(|V|, softmax) &nbsp;,&nbsp; Loss = Cross-Entropy &nbsp;,&nbsp; Adam
+  </div>
+
+  <!-- ====== R1 · DATEN ====== -->
+  <section class="py-9 border-b border-gray-200">
+    <div class="flex items-baseline gap-3 mb-2">
+      <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R1</span>
+      <h3 class="text-xl font-bold text-gray-900">Die Daten &amp; das Vokabular</h3>
+    </div>
+    <p class="text-gray-600 max-w-3xl mb-4">
+      Der Text wird tokenisiert (Wort-Ebene, Kleinschreibung, Satzzeichen als eigene Tokens). Aus dem Vokabular
+      entstehen per Sliding-Window Trainingspaare <span class="font-mono">(n Kontext-Wörter → nächstes Wort)</span>,
+      die zufällig in Trainings- und Validierungsdaten aufgeteilt werden.
+    </p>
+    <div id="vocabStats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"><!-- dynamisch --></div>
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Häufigste Wörter im Korpus</div>
+      <div id="p-vocab" class="plot"></div>
+    </div>
+
+    <details class="dev mt-4 border border-dashed border-gray-300 rounded-lg bg-white/70">
+      <summary class="cursor-pointer px-4 py-2.5 font-mono text-xs font-semibold tracking-wide text-gray-500 select-none">Werkzeuge · Korpus &amp; Parameter · neu laden / speichern / trainieren</summary>
+      <div class="px-4 pb-4 pt-2 border-t border-gray-200">
+        <label class="block text-[11px] font-mono text-gray-500 uppercase mb-1">Trainingstext (Korpus)</label>
+        <textarea id="corpus" class="w-full font-mono text-xs px-3 py-2 border border-gray-300 rounded-md h-32" spellcheck="false"></textarea>
+        <div class="flex flex-wrap gap-3 items-end mt-3">
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Kontextlänge
+            <input id="in-seq" type="number" value="5" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Embedding
+            <input id="in-emb" type="number" value="48" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">LSTM-Units
+            <input id="in-units" type="number" value="100" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Layer
+            <input id="in-layers" type="number" value="2" class="font-mono text-sm w-16 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Lernrate
+            <select id="in-lr" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"><option value="0.01">0.01</option><option value="0.001" selected>0.001</option><option value="0.005">0.005</option></select></label>
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Batch
+            <input id="in-batch" type="number" value="32" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Epochen
+            <input id="in-epochs" type="number" value="80" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Val-Anteil
+            <input id="in-val" type="number" value="0.15" step="0.05" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Max. Vokabular
+            <input id="in-maxvocab" type="number" value="5000" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+        </div>
+        <div class="flex flex-wrap gap-3 items-end mt-3">
+          <button id="btn-regen" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Korpus laden &amp; Modell trainieren</button>
+          <button id="btn-save-data" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Korpus speichern</button>
+          <button id="btn-load-data" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Korpus laden</button>
+          <button id="btn-visor" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">TF-Visor an/aus</button>
+          <input type="file" id="file-data" accept=".txt,application/json" class="hidden">
+        </div>
+        <div id="dev-log" class="dev-log font-mono text-xs whitespace-pre-wrap bg-gray-900 text-green-200 rounded-lg px-4 py-3 mt-3 max-h-40 overflow-auto leading-relaxed">bereit.</div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ====== R2 · TRAINING ====== -->
+  <section class="py-9 border-b border-gray-200">
+    <div class="flex items-baseline gap-3 mb-2">
+      <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R2</span>
+      <h3 class="text-xl font-bold text-gray-900">Training &amp; Verlust</h3>
+    </div>
+    <p class="text-gray-600 max-w-3xl mb-4">
+      Optimiert wird der Cross-Entropy-Loss mit Adam. Der Verlust sollte fallen und in ein Plateau übergehen;
+      steigt der Validierungs-Loss wieder, während der Trainings-Loss weiter sinkt, deutet das auf Overfitting hin.
+    </p>
+    <div class="flex flex-wrap gap-5 text-sm text-gray-600 mb-4">
+      <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:3px solid #15803d"></i>Training</span>
+      <span class="inline-flex items-center gap-2"><i class="inline-block w-5" style="border-top:2.5px dashed #9ca3af"></i>Validierung</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Verlust je Epoche</div>
+        <div id="p-loss" class="plot"></div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Genauigkeit je Epoche</div>
+        <div id="p-acc" class="plot"></div>
+      </div>
+    </div>
+    <details class="dev mt-4 border border-dashed border-gray-300 rounded-lg bg-white/70">
+      <summary class="cursor-pointer px-4 py-2.5 font-mono text-xs font-semibold tracking-wide text-gray-500 select-none">Werkzeuge · nur neu trainieren</summary>
+      <div class="px-4 pb-4 pt-2 border-t border-gray-200">
+        <div class="flex flex-wrap gap-3 items-end">
+          <button id="btn-retrain" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Mit aktuellen Parametern neu trainieren</button>
+          <button id="btn-discard" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Modell verwerfen</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ====== R3 · INTERAKTION ====== -->
+  <section class="py-9 border-b border-gray-200">
+    <div class="flex items-baseline gap-3 mb-2">
+      <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R3</span>
+      <h3 class="text-xl font-bold text-gray-900">Interaktion — Wortvorhersage</h3>
+    </div>
+    <p class="text-gray-600 max-w-3xl mb-4">
+      Vollständige, durch Leerzeichen getrennte Wörter eingeben. <strong>Vorhersage</strong> zeigt die
+      wahrscheinlichsten nächsten Wörter (Klick hängt an), <strong>Weiter</strong> übernimmt das wahrscheinlichste,
+      <strong>Auto</strong> erzeugt bis zu 10 Wörter (mit <strong>Stopp</strong> abbrechbar), <strong>Reset</strong>
+      leert Text und Vorhersagen.
+    </p>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+      <label class="block text-[11px] font-mono text-gray-500 uppercase mb-1">Prompt / Text</label>
+      <textarea id="prompt" class="w-full text-sm px-3 py-2 border border-gray-300 rounded-md h-24"
+                placeholder="z. B.: im sommer spielen die kinder" spellcheck="false" disabled>im sommer</textarea>
+      <div id="inputWarn" class="hidden text-xs font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mt-2"></div>
+
+      <div class="flex flex-wrap gap-2.5 mt-3">
+        <button id="btn-predict" class="font-semibold text-sm px-4 py-2 rounded-md bg-green-800 text-white hover:bg-green-900 disabled:opacity-40" disabled>🔮 Vorhersage</button>
+        <button id="btn-next"    class="font-semibold text-sm px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40" disabled>➕ Weiter</button>
+        <button id="btn-auto"    class="font-semibold text-sm px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40" disabled>⚡ Auto (max. 10)</button>
+        <button id="btn-stop"    class="font-semibold text-sm px-4 py-2 rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40" disabled>⏹ Stopp</button>
+        <button id="btn-reset"   class="font-semibold text-sm px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100 disabled:opacity-40" disabled>↺ Reset</button>
+      </div>
+
+      <div class="mt-5">
+        <div class="font-mono text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Wahrscheinlichste nächste Wörter</div>
+        <p id="predHint" class="text-sm text-gray-500">Warte auf das Training … danach „Vorhersage“ klicken.</p>
+        <div id="chips" class="flex flex-wrap gap-2.5 mt-1"></div>
+        <div id="predBox" class="mt-3 hidden"><div id="p-pred" class="plot" style="height:260px"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== R4 · EXPERIMENTE ====== -->
+  <section class="py-9 border-b border-gray-200">
+    <div class="flex items-baseline gap-3 mb-2">
+      <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R4</span>
+      <h3 class="text-xl font-bold text-gray-900">Experimente &amp; Resultate</h3>
+    </div>
+    <p class="text-gray-600 max-w-3xl mb-4">
+      Trefferquote Top-k (k = 1, 5, 10, 20, 100) und Perplexity auf Trainings- und Validierungsdaten, sowie ein
+      Rekonstruktions-Test zur Frage, ob das Modell die Trainingsdaten „auswendig“ lernt (Datenschutz-Aspekt).
+    </p>
+    <div class="flex flex-wrap gap-5 text-sm text-gray-600 mb-4">
+      <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#1d4ed8"></i>Training</span>
+      <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#d97706"></i>Validierung</span>
+    </div>
+
+    <div id="evalMetrics" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"><!-- dynamisch --></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Top-k-Trefferquote</div>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-gray-500 font-mono text-[11px] uppercase">
+            <th class="px-4 py-2">k</th><th class="px-4 py-2 text-right">Training</th><th class="px-4 py-2 text-right">Validierung</th></tr></thead>
+          <tbody id="kTable"><tr><td class="px-4 py-3 text-gray-400" colspan="3">— noch nicht ausgewertet —</td></tr></tbody>
+        </table>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Top-k als Diagramm</div>
+        <div id="p-topk" class="plot"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mt-5">
+      <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Rekonstruktion der Trainingsdaten (Frage 3)</div>
+      <pre id="reconOut" class="font-mono text-xs whitespace-pre-wrap bg-gray-900 text-green-200 px-4 py-3 m-3 rounded-lg overflow-auto">— noch nicht ausgeführt —</pre>
+    </div>
+
+    <details class="dev mt-4 border border-dashed border-gray-300 rounded-lg bg-white/70">
+      <summary class="cursor-pointer px-4 py-2.5 font-mono text-xs font-semibold tracking-wide text-gray-500 select-none">Werkzeuge · auswerten / rekonstruieren / Modell speichern</summary>
+      <div class="px-4 pb-4 pt-2 border-t border-gray-200">
+        <div class="flex flex-wrap gap-3 items-end">
+          <button id="btn-eval" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md bg-green-800 text-white hover:bg-green-900">Auswerten (Top-k &amp; Perplexity)</button>
+          <button id="btn-recon" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Trainingsdaten rekonstruieren</button>
+          <button id="btn-save-model" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Modell speichern</button>
+          <button id="btn-load-model" class="font-mono text-xs font-semibold px-3.5 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100">Modell laden</button>
+          <input type="file" id="file-model" accept=".json,.bin" multiple class="hidden">
+        </div>
+        <div id="dev-log-2" class="dev-log font-mono text-xs whitespace-pre-wrap bg-gray-900 text-green-200 rounded-lg px-4 py-3 mt-3 max-h-40 overflow-auto leading-relaxed">bereit.</div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ====== DISKUSSION ====== -->
+  <section class="py-9 border-b border-gray-200">
+    <div class="flex items-baseline gap-3 mb-4">
+      <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">§</span>
+      <h3 class="text-xl font-bold text-gray-900">Diskussion</h3>
+    </div>
+    <div id="result-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-7"><!-- dynamisch nach Auswertung --></div>
+    <div class="max-w-3xl text-gray-700 leading-relaxed">
+      <p>
+        <strong>Beobachtungen.</strong> Auf dem kleinen, bewusst repetitiven Korpus fällt der Loss schnell und die
+        Top-1-Trefferquote wird hoch, weil das Modell die wenigen Muster fast auswendig lernt. Mit steigendem k
+        (5, 10, 20, 100) wächst die Trefferquote erwartungsgemäß deutlich, da das korrekte Wort dann nur noch
+        unter den plausibelsten Kandidaten liegen muss. Die Perplexity fasst dies kompakter als die Accuracy:
+        niedrige Werte bedeuten, dass das Modell dem tatsächlich folgenden Wort im Mittel hohe Wahrscheinlichkeit
+        zuweist. Ein Abstand zwischen Trainings- und Validierungs-Perplexity zeigt Overfitting, das bei so kleinen
+        Datenmengen kaum zu vermeiden ist. Zwei gestapelte LSTM-Schichten mit je 100 Units genügen hier; größere
+        Netze overfitten nur früher, ohne die Validierung zu verbessern. Die Embedding-Schicht bündelt ähnliche
+        Wörter und macht das Training effizienter als reines One-Hot am Eingang. Bei der autoregressiven
+        Generierung führt reines Greedy-Decoding schnell zu Wiederholungen, während die Auswahl aus den Top-k
+        lebendiger wirkt. Der Rekonstruktions-Test zeigt, dass das Modell Trainingssätze teils wörtlich
+        reproduziert — bei personenbezogenen Rohdaten wäre das ein Datenschutzproblem (Memorisierung). Insgesamt
+        illustriert die Anwendung den Zielkonflikt zwischen guter Anpassung (kleiner Loss) und Generalisierung.
+      </p>
+    </div>
+  </section>
+
+  <!-- ====== DOKUMENTATION ====== -->
+  <section class="py-9">
+    <div class="flex items-baseline gap-3 mb-4">
+      <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">⚙</span>
+      <h3 class="text-xl font-bold text-gray-900">Dokumentation</h3>
+    </div>
+    <div class="max-w-3xl text-gray-700 leading-relaxed space-y-3">
+      <h4 class="font-bold text-lg text-gray-900 mt-2">1 · Technisch</h4>
+      <ul class="list-disc pl-5 space-y-1">
+        <li><strong>TensorFlow.js (4.22):</strong> definiert das LSTM-Sprachmodell, Training (Adam, Cross-Entropy)
+          und Inferenz — vollständig clientseitig im Browser, ohne Server.</li>
+        <li><strong>tfjs-vis (1.5):</strong> optionaler „Visor“ zur Live-Visualisierung der Loss-/Accuracy-Kurven
+          während des Trainings (über die Werkzeuge zuschaltbar).</li>
+        <li><strong>Plotly.js (2.35):</strong> rendert Wortverteilung, Verlust- und Genauigkeitskurven,
+          Vorhersage-Wahrscheinlichkeiten und Top-k-Trefferquoten.</li>
+        <li><strong>Tailwind CSS</strong> für Layout und Gestaltung (konsistent mit dem restlichen Auftritt).</li>
+      </ul>
+      <p><strong>Technische Besonderheiten.</strong> (a) Word-Level-Tokenizer mit Kleinschreibung und Satzzeichen
+        als eigene Tokens; reservierte Indizes <code class="font-mono bg-gray-100 px-1 rounded">&lt;PAD&gt;=0</code>
+        und <code class="font-mono bg-gray-100 px-1 rounded">&lt;UNK&gt;=1</code>. (b) Sequenzen werden am Satzanfang
+        mit <code class="font-mono bg-gray-100 px-1 rounded">&lt;PAD&gt;</code> aufgefüllt, damit auch kurze Prompts
+        funktionieren. (c) Als Loss dient <code class="font-mono bg-gray-100 px-1 rounded">sparseCategoricalCrossentropy</code>:
+        mathematisch identisch zum Categorical-Cross-Entropy, benötigt aber Integer-Labels statt One-Hot und spart
+        im Browser Speicher. (d) Alle Tensor-Operationen laufen in
+        <code class="font-mono bg-gray-100 px-1 rounded">tf.tidy()</code> bzw. mit expliziter Freigabe. (e) Das
+        Modell wird beim Laden trainiert; ein Overlay zeigt den Fortschritt, danach werden alle Diagramme befüllt.</p>
+
+      <h4 class="font-bold text-lg text-gray-900 mt-4">2 · Fachlich</h4>
+      <p><strong>Aufgabe.</strong> Next-Word-Prediction ist eine Multi-Class-Klassifikation über das Vokabular: aus
+        den letzten <em>n</em> Wörtern (Kontextlänge) berechnet das Modell per Softmax eine Wahrscheinlichkeits-
+        verteilung über alle möglichen Folgewörter.</p>
+      <p><strong>Pipeline.</strong> Text → Tokenisierung → Vokabular (Wort ↔ Index) → Trainingspaare
+        <code class="font-mono bg-gray-100 px-1 rounded">(Kontext → nächstes Wort)</code> per Sliding-Window →
+        Split in Training/Validierung.</p>
+      <p><strong>Modell.</strong> <code class="font-mono bg-gray-100 px-1 rounded">Embedding → LSTM(returnSequences) → LSTM → Dense(Softmax, |V|)</code>.
+        Die erste LSTM-Schicht reicht die gesamte Sequenz weiter, die letzte nur den finalen Zustand; optimiert wird
+        mit Adam auf den Cross-Entropy-Loss. Die autoregressive Generierung hängt das vorhergesagte Wort an und nutzt
+        es als neuen Kontext.</p>
+      <p><strong>Metriken.</strong> <em>Top-k-Accuracy</em> = Anteil der Fälle, in denen das wahre Folgewort unter den
+        k wahrscheinlichsten liegt (k = 1, 5, 10, 20, 100). <em>Perplexity</em> = exp(mittlerer Cross-Entropy);
+        niedriger ist besser.</p>
+      <p><strong>Datenschutz (Frage 3).</strong> Da das Modell Trainingssätze teils wörtlich rekonstruieren kann
+        (Memorisierung), sind bei personenbezogenen Trainingsdaten Rückschlüsse auf Einzelpersonen möglich — ein
+        reales Datenschutzrisiko, dem u. a. mit Datenminimierung, Regularisierung oder Differential Privacy begegnet
+        wird. <strong>Quellen:</strong> Mikolov et al. „Recurrent neural network based language model“;
+        TensorFlow.js-Demo „lstm-text-generation“; Grundlagen Cross-Entropy &amp; Perplexity.</p>
+    </div>
+  </section>
+
+  <p class="text-xs font-mono text-gray-500 pt-6">
+    LSTM-Sprachmodell · TensorFlow.js + Plotly · dynamisch im Browser trainiert ·
+    Word-Level · Cross-Entropy · autoregressive Wortvorhersage.
+  </p>
 </main>
 
+<script>
+  /* =========================================================================
+     0) STANDARD-KORPUS (eigens verfasst, gemeinfrei, bewusst repetitiv)
+     ========================================================================= */
+  const DEFAULT_TEXT = `
+Der kleine Ort liegt an einem ruhigen Fluss. Im Frühling blühen die Bäume und die Vögel singen am Morgen.
+Die Menschen gehen gern spazieren, wenn die Sonne scheint. Am Morgen ist die Luft noch kühl und klar.
+Im Sommer ist es warm und die Kinder spielen am Wasser. Die Kinder lachen und rennen über die grüne Wiese.
+Am Abend sitzen die Familien vor dem Haus und erzählen sich alte Geschichten. Die Geschichten sind lang und schön.
+Im Herbst fallen die bunten Blätter von den Bäumen und der Wind wird kälter. Die Bauern ernten das Getreide auf den Feldern.
+Im Winter liegt der weiße Schnee auf den Dächern und die Straßen sind still. Die Menschen bleiben im warmen Haus und trinken heißen Tee.
+Der alte Bäcker öffnet früh am Morgen seinen kleinen Laden. Er backt frisches Brot und duftende Brötchen für die Menschen im Ort.
+Die Kinder gehen am Morgen zur Schule und lernen dort lesen und schreiben. Am Nachmittag spielen die Kinder wieder auf der Wiese.
+Ein kleiner Hund läuft über die Straße und bellt fröhlich. Die Katze sitzt ruhig auf der warmen Mauer und schaut zu.
+Am Wochenende kommen viele Gäste in den kleinen Ort. Sie besuchen den alten Markt und kaufen frisches Obst und Gemüse.
+Die Sonne geht am Abend langsam unter und der Himmel wird rot. Die Menschen kehren zufrieden nach Hause zurück.
+So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich schon auf den nächsten Frühling.
+`;
+
+  /* =========================================================================
+     1) GLOBALER ZUSTAND
+     ========================================================================= */
+  let model=null;
+  let word2idx=new Map(), idx2word=[], vocabSize=0, freqPairs=[];
+  let SEQ_LEN=5;
+  const PAD=0, UNK=1;
+  let trainX=[], trainY=[], valX=[], valY=[];
+  let autoRunning=false, visorOn=false;
+  let lastEval=null;
+
+  /* =========================================================================
+     2) OVERLAY / LOG / DOM-HELFER
+     ========================================================================= */
+  const $=id=>document.getElementById(id);
+  function setOverlay(status,detail,pct){
+    $('ov-status').textContent=status;
+    if(detail!=null) $('ov-detail').textContent=detail;
+    if(pct!=null) $('ov-bar').style.width=pct+'%';
+  }
+  function showOverlay(){ $('overlay').classList.remove('hidden'); }
+  function hideOverlay(){ $('overlay').classList.add('hidden'); }
+  function log(msg){ document.querySelectorAll('.dev-log').forEach(el=>{ el.textContent+='\n'+msg; el.scrollTop=el.scrollHeight; }); }
+  function clampInt(v,lo,hi,def){ const n=parseInt(v,10); if(isNaN(n))return def; return Math.min(hi,Math.max(lo,n)); }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  const fmt=v=>(v==null||isNaN(v))?'—':(+v).toFixed(4);
+
+  /* =========================================================================
+     3) TOKENISIERUNG · VOKABULAR · SEQUENZEN
+     ========================================================================= */
+  function tokenize(text){
+    return text.toLowerCase()
+            .replace(/([.,;:!?()"„“”»«…\-–])/g,' $1 ')
+            .replace(/[\r\n]+/g,' ')
+            .split(/\s+/).filter(t=>t.length>0);
+  }
+  function buildVocab(tokens,maxVocab){
+    const freq=new Map();
+    for(const t of tokens) freq.set(t,(freq.get(t)||0)+1);
+    freqPairs=[...freq.entries()].sort((a,b)=>b[1]-a[1]);
+    word2idx=new Map(); idx2word=['<PAD>','<UNK>'];
+    let idx=2;
+    for(const [w] of freqPairs){ if(idx>=maxVocab)break; word2idx.set(w,idx); idx2word[idx]=w; idx++; }
+    vocabSize=idx2word.length;
+  }
+  const toIdx=t=>word2idx.has(t)?word2idx.get(t):UNK;
+  function buildSequences(tokens){
+    const idxs=tokens.map(toIdx);
+    const padded=Array(SEQ_LEN).fill(PAD).concat(idxs);
+    const X=[],Y=[];
+    for(let i=SEQ_LEN;i<padded.length;i++){ X.push(padded.slice(i-SEQ_LEN,i)); Y.push(padded[i]); }
+    return {X,Y};
+  }
+  function shuffleSplit(X,Y,valSplit){
+    const idx=X.map((_,i)=>i);
+    for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+    const nVal=Math.floor(idx.length*valSplit);
+    trainX=[];trainY=[];valX=[];valY=[];
+    idx.forEach((k,pos)=>{ if(pos<nVal){valX.push(X[k]);valY.push(Y[k]);} else {trainX.push(X[k]);trainY.push(Y[k]);} });
+    if(trainX.length===0){ trainX=X.slice(); trainY=Y.slice(); }
+  }
+
+  /* =========================================================================
+     4) MODELL
+     ========================================================================= */
+  function buildModel(embDim,units,nLayers,lr){
+    const m=tf.sequential();
+    m.add(tf.layers.embedding({inputDim:vocabSize,outputDim:embDim,inputLength:SEQ_LEN}));
+    for(let l=0;l<nLayers;l++) m.add(tf.layers.lstm({units,returnSequences:(l<nLayers-1)}));
+    m.add(tf.layers.dense({units:vocabSize,activation:'softmax'}));
+    m.compile({optimizer:tf.train.adam(lr),loss:'sparseCategoricalCrossentropy',metrics:['accuracy']});
+    return m;
+  }
+
+  /* =========================================================================
+     5) PLOTTING (Plotly) — grüner Auftritt
+     ========================================================================= */
+  const PLOT_FONT={family:'ui-monospace, monospace',size:11,color:'#6b7280'};
+  const C={train:'#1d4ed8',val:'#d97706',accent:'#15803d',grid:'#e5e7eb',zero:'#d1d5db',gray:'#9ca3af'};
+  const PCFG={displayModeBar:false,responsive:true};
+  function baseLayout(xt,yt,extra){
+    return Object.assign({
+      margin:{l:48,r:14,t:8,b:38},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
+      font:PLOT_FONT,showlegend:false,
+      xaxis:{title:xt,gridcolor:C.grid,zerolinecolor:C.zero},
+      yaxis:{title:yt,gridcolor:C.grid,zerolinecolor:C.zero}
+    },extra||{});
+  }
+  function drawVocabChart(){
+    const top=freqPairs.slice(0,15);
+    Plotly.newPlot('p-vocab',[{
+      x:top.map(p=>p[0]),y:top.map(p=>p[1]),type:'bar',marker:{color:C.accent}
+    }],baseLayout('Wort','Häufigkeit'),PCFG);
+  }
+  let lossHist=[],vlossHist=[],accHist=[],vaccHist=[],epochHist=[];
+  function drawTrainingCurves(){
+    Plotly.newPlot('p-loss',[
+      {x:epochHist,y:lossHist,mode:'lines',line:{color:C.accent,width:3},name:'Training'},
+      {x:epochHist,y:vlossHist,mode:'lines',line:{color:C.gray,width:2,dash:'dash'},name:'Validierung'}
+    ],baseLayout('Epoche','Loss'),PCFG);
+    Plotly.newPlot('p-acc',[
+      {x:epochHist,y:accHist,mode:'lines',line:{color:C.accent,width:3},name:'Training'},
+      {x:epochHist,y:vaccHist,mode:'lines',line:{color:C.gray,width:2,dash:'dash'},name:'Validierung'}
+    ],baseLayout('Epoche','Accuracy',{yaxis:{title:'Accuracy',range:[0,1],gridcolor:C.grid,zerolinecolor:C.zero}}),PCFG);
+  }
+
+  /* =========================================================================
+     6) TRAINING (unter Overlay)
+     ========================================================================= */
+  async function runAll(){
+    try{
+      showOverlay();
+      SEQ_LEN     = clampInt($('in-seq').value,2,12,5);
+      const embDim= clampInt($('in-emb').value,8,256,48);
+      const units = clampInt($('in-units').value,16,256,100);
+      const nLay  = clampInt($('in-layers').value,1,4,2);
+      const lr    = parseFloat($('in-lr').value);
+      const batch = clampInt($('in-batch').value,8,256,32);
+      const epochs= clampInt($('in-epochs').value,5,500,80);
+      const valSp = Math.min(0.4,Math.max(0,parseFloat($('in-val').value)||0.15));
+      const maxVoc= clampInt($('in-maxvocab').value,50,20000,5000);
+
+      setOverlay('Bereite Daten vor …','Tokenisierung & Vokabular',5);
+      await tf.nextFrame();
+
+      const tokens=tokenize($('corpus').value.trim());
+      if(tokens.length<SEQ_LEN+5){ hideOverlay(); log('Zu wenig Text im Korpus.'); return; }
+      buildVocab(tokens,maxVoc);
+      const {X,Y}=buildSequences(tokens);
+      shuffleSplit(X,Y,valSp);
+      drawVocabChart();
+      renderVocabStats(tokens.length,X.length);
+
+      if(model){ model.dispose(); model=null; }
+      model=buildModel(embDim,units,nLay,lr);
+
+      lossHist=[];vlossHist=[];accHist=[];vaccHist=[];epochHist=[];
+      const xs=tf.tensor2d(trainX,[trainX.length,SEQ_LEN],'int32');
+      const ys=tf.tensor1d(trainY,'int32');
+      let vxs=null,vys=null,valData;
+      if(valX.length){ vxs=tf.tensor2d(valX,[valX.length,SEQ_LEN],'int32'); vys=tf.tensor1d(valY,'int32'); valData=[vxs,vys]; }
+
+      const cbs=[];
+      if(visorOn && typeof tfvis!=='undefined'){
+        cbs.push(tfvis.show.fitCallbacks({name:'Verlust & Genauigkeit',tab:'Training'},['loss','val_loss','acc','val_acc'],{callbacks:['onEpochEnd']}));
+      }
+      let batchCounter=0;
+      cbs.push({
+        onEpochEnd:async(epoch,logs)=>{
+          epochHist.push(epoch+1);
+          lossHist.push(logs.loss); vlossHist.push(logs.val_loss??null);
+          accHist.push(logs.acc);   vaccHist.push(logs.val_acc??null);
+          setOverlay('Trainiere Modell …',
+                  `Epoche ${epoch+1}/${epochs} · Loss ${logs.loss.toFixed(3)}`+(logs.val_loss!==undefined?` · Val ${logs.val_loss.toFixed(3)}`:''),
+                  5+90*(epoch+1)/epochs);
+          await tf.nextFrame();
+        },
+        onBatchEnd:async()=>{ if((++batchCounter%25)===0) await tf.nextFrame(); }
+      });
+
+      setOverlay('Trainiere Modell …',`0/${epochs} Epochen · Vokabular ${vocabSize}`,6);
+      await model.fit(xs,ys,{epochs,batchSize:batch,shuffle:true,validationData:valData,callbacks:cbs});
+      xs.dispose();ys.dispose(); if(vxs)vxs.dispose(); if(vys)vys.dispose();
+
+      setOverlay('Zeichne Resultate …','',99);
+      await tf.nextFrame();
+      drawTrainingCurves();
+      enableInteraction(true);
+      log('Training abgeschlossen · Vokabular '+vocabSize+' · Sequenzen '+X.length+' (Train/Val '+trainX.length+'/'+valX.length+') · '+epochs+' Epochen.');
+      hideOverlay();
+    }catch(err){
+      console.error(err); hideOverlay(); log('Fehler beim Training: '+err.message);
+    }
+  }
+
+  function renderVocabStats(nTok,nSeq){
+    $('vocabStats').innerHTML=`
+    ${statCard('Tokens', nTok, 'Wörter im Korpus','text-gray-900')}
+    ${statCard('Vokabular', vocabSize, 'eindeutige Tokens','text-gray-900')}
+    ${statCard('Sequenzen', nSeq, 'Trainingspaare','text-gray-900')}
+    ${statCard('Train / Val', trainX.length+' / '+valX.length, 'Aufteilung','text-gray-900')}`;
+  }
+  function statCard(label,val,sub,cls){
+    return `<div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div class="font-mono text-[11px] uppercase tracking-wide text-gray-500">${label}</div>
+      <div class="font-mono text-xl font-semibold mt-1 ${cls||'text-gray-900'}">${val}</div>
+      <div class="text-xs mt-1 text-gray-500">${sub||''}</div></div>`;
+  }
+
+  function enableInteraction(on){
+    ['btn-predict','btn-next','btn-auto','btn-reset','btn-eval','btn-recon','btn-save-model'].forEach(id=>$(id).disabled=!on);
+    $('prompt').disabled=!on;
+    $('btn-stop').disabled=true;
+    $('predHint').textContent=on?'Klicke „Vorhersage“, um die wahrscheinlichsten nächsten Wörter zu sehen.'
+            :'Warte auf das Training … danach „Vorhersage“ klicken.';
+  }
+
+  /* =========================================================================
+     7) VORHERSAGE
+     ========================================================================= */
+  function contextIndices(text){
+    const toks=tokenize(text);
+    let idxs=toks.map(toIdx);
+    if(idxs.length<SEQ_LEN) idxs=Array(SEQ_LEN-idxs.length).fill(PAD).concat(idxs);
+    else idxs=idxs.slice(idxs.length-SEQ_LEN);
+    return idxs;
+  }
+  function fullDistribution(text){
+    const ctx=contextIndices(text);
+    return tf.tidy(()=>{
+      const input=tf.tensor2d([ctx],[1,SEQ_LEN],'int32');
+      return Array.from(model.predict(input).dataSync());
+    });
+  }
+  function topKWords(probs,k,skipSpecial=true){
+    const arr=[];
+    for(let i=0;i<probs.length;i++){ if(skipSpecial&&(i===PAD||i===UNK))continue; arr.push({idx:i,word:idx2word[i],prob:probs[i]}); }
+    arr.sort((a,b)=>b.prob-a.prob);
+    return arr.slice(0,k);
+  }
+  function analyzePrompt(text){
+    const toks=tokenize(text);
+    const oov=[...new Set(toks.filter(t=>!word2idx.has(t)))];
+    return {toks,oov};
+  }
+  function doPredict(){
+    if(!model)return;
+    const text=$('prompt').value;
+    if(text.trim().length===0){ showWarn('Bitte zuerst mindestens ein Wort eingeben.'); return; }
+    const {oov}=analyzePrompt(text);
+    if(oov.length) showWarn('Unbekannte Wörter (werden als <UNK> behandelt): '+oov.join(', ')); else hideWarn();
+    const probs=fullDistribution(text);
+    const top=topKWords(probs,8);
+    renderChips(top); renderPredChart(top);
+    $('predHint').textContent='Klicke ein Wort, um es anzuhängen — oder nutze „Weiter“/„Auto“.';
+    return top;
+  }
+  function showWarn(m){ const w=$('inputWarn'); w.textContent=m; w.classList.remove('hidden'); }
+  function hideWarn(){ $('inputWarn').classList.add('hidden'); }
+
+  function renderChips(top){
+    const box=$('chips'); box.innerHTML='';
+    const max=top.length?top[0].prob:1;
+    top.forEach((t,i)=>{
+      const b=document.createElement('button');
+      b.className='chip text-left bg-white border rounded-lg px-3 py-2 min-w-[104px] shadow-sm hover:border-green-700 transition '+(i===0?'border-green-700 bg-green-50':'border-gray-200');
+      b.innerHTML=`<div class="font-semibold text-gray-900 text-sm">${escapeHtml(t.word)}</div>`
+              +`<div class="text-xs text-gray-500">${(t.prob*100).toFixed(1)} %</div>`
+              +`<span class="bar" style="width:${Math.max(6,(t.prob/max)*100)}%"></span>`;
+      b.title='Anhängen: '+t.word;
+      b.onclick=()=>appendWord(t.word);
+      box.appendChild(b);
+    });
+  }
+  function renderPredChart(top){
+    $('predBox').classList.toggle('hidden',top.length===0);
+    if(!top.length)return;
+    const rev=top.slice().reverse();
+    Plotly.newPlot('p-pred',[{
+      x:rev.map(t=>+(t.prob*100).toFixed(2)),y:rev.map(t=>t.word),type:'bar',orientation:'h',marker:{color:C.accent}
+    }],baseLayout('Wahrscheinlichkeit (%)','',{margin:{l:90,r:14,t:8,b:38}}),PCFG);
+  }
+  function appendWord(word){
+    const cur=$('prompt').value.replace(/\s+$/,'');
+    const isPunct=/^[.,;:!?…)]$/.test(word);
+    $('prompt').value=cur+(isPunct?'':' ')+word;
+    doPredict();
+  }
+  function doNext(){ const top=doPredict(); if(top&&top.length) appendWord(top[0].word); }
+  async function doAuto(){
+    if(autoRunning)return; autoRunning=true;
+    $('btn-stop').disabled=false; ['btn-auto','btn-next','btn-predict'].forEach(id=>$(id).disabled=true);
+    for(let n=0;n<10&&autoRunning;n++){ const top=doPredict(); if(!top||!top.length)break; appendWord(top[0].word); await new Promise(r=>setTimeout(r,350)); }
+    stopAuto();
+  }
+  function stopAuto(){ autoRunning=false; $('btn-stop').disabled=true; ['btn-auto','btn-next','btn-predict'].forEach(id=>$(id).disabled=false); }
+  function doReset(){ stopAuto(); $('prompt').value=''; $('chips').innerHTML=''; $('predBox').classList.add('hidden'); hideWarn(); $('predHint').textContent='Text zurückgesetzt. „Vorhersage“ klicken, um neu zu beginnen.'; }
+
+  /* =========================================================================
+     8) AUSWERTUNG: TOP-k & PERPLEXITY
+     ========================================================================= */
+  async function evaluateSet(X,Y){
+    if(X.length===0)return null;
+    const kmax=Math.min(100,vocabSize);
+    const ks=[1,5,10,20,100].map(k=>Math.min(k,vocabSize));
+    const counts={}; ks.forEach(k=>counts[k]=0);
+    const xs=tf.tensor2d(X,[X.length,SEQ_LEN],'int32');
+    const preds=model.predict(xs);
+    const topk=tf.topk(preds,kmax);
+    const topIdx=await topk.indices.array();
+    const rows=tf.range(0,X.length,1,'int32');
+    const gidx=tf.stack([rows,tf.tensor1d(Y,'int32')],1);
+    const tp=tf.gatherND(preds,gidx);
+    const nll=tf.neg(tf.log(tf.clipByValue(tp,1e-10,1)));
+    const meanNLL=(await nll.mean().data())[0];
+    const ppl=Math.exp(meanNLL);
+    for(let i=0;i<X.length;i++){ const row=topIdx[i]; for(const k of ks){ if(row.slice(0,k).includes(Y[i]))counts[k]++; } }
+    xs.dispose();preds.dispose();topk.indices.dispose();topk.values.dispose();rows.dispose();gidx.dispose();tp.dispose();nll.dispose();
+    const acc={}; ks.forEach(k=>acc[k]=counts[k]/X.length);
+    return {acc,ppl,ks,n:X.length};
+  }
+  async function doEval(){
+    if(!model){ log('Erst trainieren.'); return; }
+    log('Auswertung läuft …'); await tf.nextFrame();
+    const tr=await evaluateSet(trainX,trainY);
+    const va=valX.length?await evaluateSet(valX,valY):null;
+    lastEval={tr,va};
+
+    // Metrik-Karten (R4)
+    let m=statCard('Perplexity (Train)',tr.ppl.toFixed(2),'niedriger = besser','text-gray-900');
+    if(va) m+=statCard('Perplexity (Val)',va.ppl.toFixed(2),'Generalisierung','text-gray-900');
+    m+=statCard('Top-1 (Train)',(tr.acc[1]*100).toFixed(1)+' %','exakt richtig','text-blue-700');
+    if(va) m+=statCard('Top-1 (Val)',(va.acc[1]*100).toFixed(1)+' %','ungesehen','text-amber-700');
+    $('evalMetrics').innerHTML=m;
+
+    // Tabelle
+    let rowsHtml='';
+    tr.ks.forEach(k=>{
+      const t=(tr.acc[k]*100).toFixed(1)+' %';
+      const v=va?(va.acc[k]*100).toFixed(1)+' %':'–';
+      rowsHtml+=`<tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">k = ${k}</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">${t}</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">${v}</td></tr>`;
+    });
+    $('kTable').innerHTML=rowsHtml;
+
+    // Diagramm
+    const labels=tr.ks.map(k=>'k='+k);
+    const data=[{x:labels,y:tr.ks.map(k=>+(tr.acc[k]*100).toFixed(1)),type:'bar',name:'Training',marker:{color:C.train}}];
+    if(va) data.push({x:labels,y:va.ks.map(k=>+(va.acc[k]*100).toFixed(1)),type:'bar',name:'Validierung',marker:{color:C.val}});
+    Plotly.newPlot('p-topk',data,baseLayout('k','Trefferquote (%)',{barmode:'group',showlegend:true,legend:{orientation:'h',y:1.15},yaxis:{title:'Trefferquote (%)',range:[0,100],gridcolor:C.grid,zerolinecolor:C.zero}}),PCFG);
+
+    // Diskussions-Statistik
+    let ds=statCard('Top-1 Train/Val',(tr.acc[1]*100).toFixed(0)+' % / '+(va?(va.acc[1]*100).toFixed(0):'–')+' %','k = 1','text-gray-900');
+    ds+=statCard('Top-5 Train/Val',(tr.acc[5]*100).toFixed(0)+' % / '+(va?(va.acc[5]*100).toFixed(0):'–')+' %','k = 5','text-gray-900');
+    ds+=statCard('Perplexity Train/Val',tr.ppl.toFixed(1)+' / '+(va?va.ppl.toFixed(1):'–'),'Sprachmodell-Güte','text-gray-900');
+    const gap=va?(va.ppl/tr.ppl):null;
+    ds+=statCard('Overfitting-Indikator',gap?gap.toFixed(2)+'×':'—','Val-PPL / Train-PPL',gap&&gap>1.5?'text-amber-700':'text-green-700');
+    $('result-stats').innerHTML=ds;
+
+    log('Auswertung fertig · Train-PPL '+tr.ppl.toFixed(2)+(va?' · Val-PPL '+va.ppl.toFixed(2):'')+' · Top-1 '+(tr.acc[1]*100).toFixed(1)+' %');
+  }
+
+  /* =========================================================================
+     9) REKONSTRUKTION (Datenschutz-Test)
+     ========================================================================= */
+  async function doReconstruct(){
+    if(!model){ log('Erst trainieren.'); return; }
+    const tokens=tokenize($('corpus').value);
+    const nGen=Math.min(40,tokens.length-SEQ_LEN);
+    if(nGen<2){ $('reconOut').textContent='Zu wenig Text für die Rekonstruktion.'; return; }
+    let ctx=tokens.slice(0,SEQ_LEN).slice();
+    const gen=[];
+    for(let i=0;i<nGen;i++){
+      const probs=fullDistribution(ctx.join(' '));
+      const best=topKWords(probs,1,false)[0];
+      gen.push(best.word); ctx.push(best.word); ctx=ctx.slice(ctx.length-SEQ_LEN);
+      if(i%6===0) await tf.nextFrame();
+    }
+    const orig=tokens.slice(SEQ_LEN,SEQ_LEN+nGen);
+    let match=0; for(let i=0;i<nGen;i++) if(gen[i]===orig[i])match++;
+    const rate=(match/nGen*100).toFixed(1);
+    $('reconOut').textContent=
+            'Seed:      '+tokens.slice(0,SEQ_LEN).join(' ')+'\n\n'+
+            'Original:  '+orig.join(' ')+'\n\n'+
+            'Generiert: '+gen.join(' ')+'\n\n'+
+            'Übereinstimmung: '+match+'/'+nGen+' Wörter = '+rate+' %  →  '+
+            (rate>60?'starke Memorisierung (Datenschutzrisiko bei sensiblen Daten)':'moderate/geringe Memorisierung');
+    log('Rekonstruktion: '+rate+' % Übereinstimmung.');
+  }
+
+  /* =========================================================================
+     10) EINZELMODELL NEU TRAINIEREN / VERWERFEN
+     ========================================================================= */
+  function discardModel(){ stopAuto(); if(model){model.dispose();model=null;} enableInteraction(false); $('btn-save-model').disabled=true; log('Modell verworfen. Bitte neu trainieren.'); }
+
+  /* =========================================================================
+     11) DEV-TOOLS: Speichern/Laden
+     ========================================================================= */
+  function download(name,text,mime='application/json'){
+    const b=new Blob([text],{type:mime}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(b); a.download=name; a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  /* =========================================================================
+     12) INIT / EVENTS
+     ========================================================================= */
+  window.addEventListener('DOMContentLoaded',()=>{
+    if(typeof tf==='undefined'||typeof Plotly==='undefined'){ setOverlay('Fehler: Bibliotheken nicht geladen','CDN / Internetverbindung prüfen',0); return; }
+    $('corpus').value=DEFAULT_TEXT.trim();
+
+    // R1
+    $('btn-regen').onclick=()=>runAll();
+    $('btn-save-data').onclick=()=>{ download('korpus.txt',$('corpus').value,'text/plain'); log('Korpus gespeichert (korpus.txt).'); };
+    $('btn-load-data').onclick=()=>$('file-data').click();
+    $('file-data').onchange=ev=>{ const f=ev.target.files[0]; if(!f)return; const r=new FileReader();
+      r.onload=()=>{ try{ let t=r.result; if(f.name.endsWith('.json')){ const o=JSON.parse(t); t=o.corpus||t; } $('corpus').value=t; log('Korpus geladen ('+f.name+'). Jetzt „Korpus laden & Modell trainieren“.'); }catch(e){ log('Ladefehler: '+e.message); } };
+      r.readAsText(f); };
+    $('btn-visor').onclick=()=>{ visorOn=!visorOn; if(typeof tfvis!=='undefined') tfvis.visor().toggle(); log('TF-Visor '+(visorOn?'aktiviert (wirkt beim nächsten Training)':'deaktiviert')+'.'); };
+
+    // R2
+    $('btn-retrain').onclick=()=>runAll();
+    $('btn-discard').onclick=()=>discardModel();
+
+    // R3
+    $('btn-predict').onclick=doPredict;
+    $('btn-next').onclick=doNext;
+    $('btn-auto').onclick=doAuto;
+    $('btn-stop').onclick=stopAuto;
+    $('btn-reset').onclick=doReset;
+    $('prompt').addEventListener('input',()=>{ if(!model)return; const t=$('prompt').value; if(t.trim().length===0){hideWarn();return;} const {oov}=analyzePrompt(t); if(oov.length)showWarn('Unbekannte Wörter (werden als <UNK> behandelt): '+oov.join(', ')); else hideWarn(); });
+
+    // R4
+    $('btn-eval').onclick=doEval;
+    $('btn-recon').onclick=doReconstruct;
+    $('btn-save-model').onclick=async()=>{ if(!model){log('kein Modell.');return;} await model.save('downloads://lstm-wortvorhersage'); log('Modell gespeichert (lstm-wortvorhersage.json + .weights.bin). Hinweis: Vokabular separat sichern.'); };
+    $('btn-load-model').onclick=()=>$('file-model').click();
+    $('file-model').onchange=async ev=>{ const files=[...ev.target.files]; const json=files.find(f=>f.name.endsWith('.json')); const bin=files.find(f=>f.name.endsWith('.bin'));
+      if(!json||!bin){ log('Bitte .json UND .weights.bin auswählen.'); return; }
+      try{ if(model)model.dispose(); model=await tf.loadLayersModel(tf.io.browserFiles([json,bin]));
+        model.compile({optimizer:tf.train.adam(0.001),loss:'sparseCategoricalCrossentropy',metrics:['accuracy']});
+        log('Modell geladen. Achtung: passendes Vokabular/Kontextlänge muss zum aktuellen Korpus passen.'); enableInteraction(true);
+      }catch(e){ log('Modell-Ladefehler: '+e.message); } };
+
+    runAll(); // Auto-Start beim Laden
+  });
+</script>
 </body>
 </html>
