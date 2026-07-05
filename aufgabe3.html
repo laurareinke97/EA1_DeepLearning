@@ -71,6 +71,19 @@
   </div>
   <div id="errBanner" class="hidden text-sm bg-red-50 border border-red-300 text-red-800 rounded px-4 py-3 mb-4 font-mono"></div>
 
+  <details class="mt-1 mb-6 border border-gray-200 rounded-xl bg-white shadow-sm">
+    <summary class="cursor-pointer px-5 py-3 font-semibold text-green-800 select-none">❔ Kurzanleitung &amp; Hilfe</summary>
+    <div class="px-5 pb-5 pt-1 text-gray-700 leading-relaxed text-sm space-y-2 border-t border-gray-100">
+      <p><strong>Ablauf in drei Schritten:</strong></p>
+      <ol class="list-decimal pl-5 space-y-1">
+        <li><strong>Training (R1–R2):</strong> Der Standardtext ist bereits geladen; beim Öffnen der Seite trainiert das Modell automatisch (Fortschritt im Overlay). Eigene Daten und Parameter änderst du im Panel <em>„Werkzeuge“</em> unter R1 und startest mit <em>„Korpus laden &amp; Modell trainieren“</em>. Der Verlust (R2) sollte fallen und in ein Plateau übergehen.</li>
+        <li><strong>Vorhersagen (R3):</strong> Vollständige, durch Leerzeichen getrennte Wörter eingeben. <em>Vorhersage</em> zeigt die wahrscheinlichsten nächsten Wörter mit Prozentwert (Klick hängt an), <em>Weiter</em> übernimmt das wahrscheinlichste, <em>Auto</em> erzeugt bis zu 10 Wörter (<em>Stopp</em> bricht ab), <em>Reset</em> leert Text und Vorhersagen.</li>
+        <li><strong>Messen (R4):</strong> <em>Auswerten</em> berechnet Top-k-Trefferquoten und Perplexity, <em>Trainingsdaten rekonstruieren</em> zeigt, wie stark das Modell auswendig lernt (Datenschutz).</li>
+      </ol>
+      <p class="text-gray-500"><strong>Hinweise:</strong> Unbekannte Wörter werden als <span class="font-mono">&lt;UNK&gt;</span> behandelt und unter dem Eingabefeld gemeldet. Mit wenig, repetitivem Text wird die Top-1-Quote hoch; mehr und vielfältigere Daten senken sie, wirken aber natürlicher. Über <em>„TF-Visor an/aus“</em> (Werkzeuge unter R1) lässt sich die Loss-Kurve live einblenden.</p>
+    </div>
+  </details>
+
   <!-- ====== R1 · DATEN ====== -->
   <section class="py-9 border-b border-gray-200">
     <div class="flex items-baseline gap-3 mb-2">
@@ -423,7 +436,7 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich sc
     m.compile({optimizer:tf.train.adam(lr),loss:'sparseCategoricalCrossentropy'});
     return m;
   }
-
+  // Top-1-Genauigkeit selbst berechnen (unabhängig von der eingebauten Metrik)
   function quickAcc(X,Y){
     if(!X||!X.length) return null;
     return tf.tidy(()=>{
