@@ -116,11 +116,11 @@
           <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Layer
             <input id="in-layers" type="number" value="2" class="font-mono text-sm w-16 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
           <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Lernrate
-            <select id="in-lr" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"><option value="0.01">0.01</option><option value="0.001" selected>0.001</option><option value="0.005">0.005</option></select></label>
+            <select id="in-lr" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"><option value="0.01" selected>0.01</option><option value="0.001">0.001</option><option value="0.005">0.005</option></select></label>
           <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Batch
             <input id="in-batch" type="number" value="32" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
           <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Epochen
-            <input id="in-epochs" type="number" value="80" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
+            <input id="in-epochs" type="number" value="200" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
           <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Val-Anteil
             <input id="in-val" type="number" value="0.15" step="0.05" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
           <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Max. Vokabular
@@ -183,7 +183,8 @@
       Vollständige, durch Leerzeichen getrennte Wörter eingeben. <strong>Vorhersage</strong> zeigt die
       wahrscheinlichsten nächsten Wörter (Klick hängt an), <strong>Weiter</strong> übernimmt das wahrscheinlichste,
       <strong>Auto</strong> erzeugt bis zu 10 Wörter (mit <strong>Stopp</strong> abbrechbar), <strong>Reset</strong>
-      leert Text und Vorhersagen.
+      leert Text und Vorhersagen. Die Vorschläge spiegeln den Trainingstext wider; sinnvolle Ergebnisse entstehen
+      vor allem mit Wörtern und Wendungen, die im Korpus vorkommen (z. B. „im sommer“, „am morgen“, „die kinder“).
     </p>
 
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
@@ -339,30 +340,36 @@
         Aufgabenstellung.</p>
     </div>
   </section>
-
-  <p class="text-xs font-mono text-gray-500 pt-6">
-    LSTM-Sprachmodell · TensorFlow.js + Plotly · dynamisch im Browser trainiert ·
-    Word-Level · Cross-Entropy · autoregressive Wortvorhersage.
-  </p>
 </main>
 
 <script>
   /* =========================================================================
-     0) STANDARD-KORPUS (eigens verfasst, gemeinfrei, bewusst repetitiv)
+     0) STANDARD-KORPUS (kurzer deutscher Beispieltext)
      ========================================================================= */
   const DEFAULT_TEXT = `
-Der kleine Ort liegt an einem ruhigen Fluss. Im Frühling blühen die Bäume und die Vögel singen am Morgen.
-Die Menschen gehen gern spazieren, wenn die Sonne scheint. Am Morgen ist die Luft noch kühl und klar.
-Im Sommer ist es warm und die Kinder spielen am Wasser. Die Kinder lachen und rennen über die grüne Wiese.
-Am Abend sitzen die Familien vor dem Haus und erzählen sich alte Geschichten. Die Geschichten sind lang und schön.
-Im Herbst fallen die bunten Blätter von den Bäumen und der Wind wird kälter. Die Bauern ernten das Getreide auf den Feldern.
-Im Winter liegt der weiße Schnee auf den Dächern und die Straßen sind still. Die Menschen bleiben im warmen Haus und trinken heißen Tee.
-Der alte Bäcker öffnet früh am Morgen seinen kleinen Laden. Er backt frisches Brot und duftende Brötchen für die Menschen im Ort.
-Die Kinder gehen am Morgen zur Schule und lernen dort lesen und schreiben. Am Nachmittag spielen die Kinder wieder auf der Wiese.
-Ein kleiner Hund läuft über die Straße und bellt fröhlich. Die Katze sitzt ruhig auf der warmen Mauer und schaut zu.
+Der kleine Ort liegt an einem ruhigen Fluss. Am Morgen ist die Luft noch kühl und klar.
+Im Frühling blühen die Bäume, und die Vögel singen am Morgen. Die Menschen gehen gern spazieren, wenn die Sonne scheint.
+Im Sommer ist es warm, und die Kinder spielen am Wasser. Die Kinder lachen und rennen über die grüne Wiese.
+Im Sommer ist der Tag lang, und am Abend ist es noch hell. Die Menschen sitzen vor dem Haus und erzählen sich alte Geschichten.
+Im Herbst wird der Wind kälter, und die bunten Blätter fallen von den Bäumen. Die Bauern ernten das Getreide auf den Feldern.
+Im Herbst regnet es oft, und die Menschen bleiben gern im warmen Haus. Am Abend trinken sie heißen Tee und lesen ein Buch.
+Im Winter liegt der weiße Schnee auf den Dächern, und die Straßen sind still. Die Kinder bauen einen Schneemann auf der Wiese.
+Im Winter ist es kalt, und am Morgen ist alles weiß. Die Menschen bleiben im warmen Haus und trinken heißen Tee.
+Am Morgen öffnet der alte Bäcker seinen kleinen Laden. Er backt frisches Brot und duftende Brötchen für die Menschen im Ort.
+Am Morgen kaufen die Menschen frisches Brot beim Bäcker. Sie grüßen ihn freundlich und gehen dann zur Arbeit.
+Am Morgen gehen die Kinder zur Schule, und die Lehrerin wartet schon. In der Schule lernen die Kinder lesen und schreiben.
+Am Nachmittag kommen die Kinder aus der Schule zurück. Sie spielen wieder auf der Wiese und lachen laut.
+Am Nachmittag scheint die Sonne warm, und die Katze sitzt auf der Mauer. Ein kleiner Hund läuft über die Straße und bellt fröhlich.
+Am Abend geht die Sonne langsam unter, und der Himmel wird rot. Die Menschen kehren zufrieden nach Hause zurück.
+Am Abend wird es ruhig im Ort, und die Straßen sind leer. Nur der Fluss rauscht leise durch die Nacht.
 Am Wochenende kommen viele Gäste in den kleinen Ort. Sie besuchen den alten Markt und kaufen frisches Obst und Gemüse.
-Die Sonne geht am Abend langsam unter und der Himmel wird rot. Die Menschen kehren zufrieden nach Hause zurück.
-So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich schon auf den nächsten Frühling.
+Am Wochenende ist der Markt voll, und die Menschen freuen sich. Die Bauern verkaufen frisches Gemüse und süße Äpfel.
+Der Fluss fließt ruhig durch den Ort, und die Enten schwimmen im Wasser. Die Kinder stehen am Ufer und schauen den Enten zu.
+Der alte Baum steht am Ufer des Flusses, und im Sommer spendet er Schatten. Die Menschen sitzen im Schatten und ruhen sich aus.
+Die Lehrerin ist freundlich, und die Kinder lernen gern bei ihr. Sie liest den Kindern eine schöne Geschichte vor.
+Die Geschichten sind lang und schön, und die Kinder hören gespannt zu. Am Ende klatschen sie und wollen noch mehr hören.
+Jeden Morgen singt der Vogel im Baum, und die Sonne geht auf. Jeden Abend geht die Sonne unter, und der Vogel wird still.
+So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss. Und im Frühling blühen die Bäume wieder, und die Vögel singen am Morgen.
 `;
 
   /* =========================================================================
