@@ -255,18 +255,21 @@
           <th class="px-4 py-2">Variante</th><th class="px-4 py-2 text-right">Top-1 Train</th><th class="px-4 py-2 text-right">Top-1 Val</th><th class="px-4 py-2 text-right">Perplexity Val</th></tr></thead>
         <tbody>
         <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">2 Layer × 100 Units <span class="text-green-700">(final)</span></td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,6 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">12,2 %</td><td class="px-4 py-2.5 text-right font-mono">18804,73</td></tr>
-        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">1 Layer × 100 Units</td><td class="px-4 py-2.5 text-right font-mono text-gray-400">—</td><td class="px-4 py-2.5 text-right font-mono text-gray-400">—</td><td class="px-4 py-2.5 text-right font-mono text-gray-400">—</td></tr>
-        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">2 Layer × 50 Units</td><td class="px-4 py-2.5 text-right font-mono text-gray-400">—</td><td class="px-4 py-2.5 text-right font-mono text-gray-400">—</td><td class="px-4 py-2.5 text-right font-mono text-gray-400">—</td></tr>
+        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">1 Layer × 100 Units</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,4 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">14,6 %</td><td class="px-4 py-2.5 text-right font-mono">4850,45</td></tr>
+        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">2 Layer × 50 Units</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,8 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">19,5 %</td><td class="px-4 py-2.5 text-right font-mono">7559,95</td></tr>
         </tbody>
       </table>
       <div class="px-4 py-3 text-xs text-gray-500 border-t border-gray-100 leading-relaxed">
-        <strong class="text-gray-700">Begründung der finalen Architektur:</strong> Gewählt wurde ein zweischichtiges
-        LSTM mit je 100 Units, wie in der Aufgabenstellung vorgegeben. Die zweite rekurrente Schicht bildet längere
-        Abfolgen besser ab als eine einzelne; mehr Units oder eine dritte Schicht brachten auf dem kurzen Korpus
-        keinen Gewinn, sondern nur früheres Overfitting. Die Embedding-Schicht (Dimension 48) verdichtet das
-        Vokabular und beschleunigt das Training gegenüber einem One-Hot-Eingang. Kontextlänge 5, Adam mit Lernrate
-        0.01 und Batch-Size 32 ergaben den besten Kompromiss aus stabilem Training und Trefferquote.
-        <br><span class="italic">(Die beiden Vergleichszeilen nach je einem eigenen Lauf mit den notierten Werten füllen.)</span>
+        <strong class="text-gray-700">Begründung der finalen Architektur:</strong> Als finale Architektur wurde das
+        in der Aufgabenstellung vorgegebene zweischichtige LSTM mit je 100 Units beibehalten. Der Vergleich zeigt,
+        dass alle drei Varianten die Trainingsdaten nahezu vollständig lernen (Top-1 Train ~99–100 %). Auf den
+        Validierungsdaten schneiden die kleineren Netze sogar etwas besser ab (2 Layer × 50 und 1 Layer × 100 mit
+        höherem Top-1 Val und deutlich niedrigerer Val-Perplexity), weil das größere Netz auf dem kurzen Korpus am
+        stärksten überanpasst. Die Unterschiede sind angesichts der geringen Datenmenge jedoch klein; die
+        vorgegebene 2×100-Architektur bietet die meiste Kapazität für größere Korpora und wurde daher als Standard
+        gewählt. Die Embedding-Schicht (Dimension 48) verdichtet das Vokabular und beschleunigt das Training
+        gegenüber einem One-Hot-Eingang; Kontextlänge 5, Adam mit Lernrate 0.01 und Batch-Size 32 ergaben ein
+        stabiles Training.
       </div>
     </div>
 
