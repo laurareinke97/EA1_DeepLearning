@@ -15,6 +15,7 @@
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
   <style>
+    html{font-size:17.5px}
     .plot{width:100%;height:330px}
     #overlay{position:fixed;inset:0;z-index:50;background:rgba(243,244,246,.95);
       display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -104,26 +105,26 @@
     <details class="dev mt-4 border border-dashed border-gray-300 rounded-lg bg-white/70">
       <summary class="cursor-pointer px-4 py-2.5 font-mono text-xs font-semibold tracking-wide text-gray-500 select-none">Werkzeuge · Korpus &amp; Parameter · neu laden / speichern / trainieren</summary>
       <div class="px-4 pb-4 pt-2 border-t border-gray-200">
-        <label class="block text-[11px] font-mono text-gray-500 uppercase mb-1">Trainingstext (Korpus)</label>
+        <label class="block text-xs font-mono text-gray-500 uppercase mb-1">Trainingstext (Korpus)</label>
         <textarea id="corpus" class="w-full font-mono text-xs px-3 py-2 border border-gray-300 rounded-md h-32" spellcheck="false"></textarea>
         <div class="flex flex-wrap gap-3 items-end mt-3">
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Kontextlänge
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Kontextlänge
             <input id="in-seq" type="number" value="5" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Embedding
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Embedding
             <input id="in-emb" type="number" value="48" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">LSTM-Units
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">LSTM-Units
             <input id="in-units" type="number" value="100" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Layer
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Layer
             <input id="in-layers" type="number" value="2" class="font-mono text-sm w-16 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Lernrate
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Lernrate
             <select id="in-lr" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"><option value="0.01" selected>0.01</option><option value="0.001">0.001</option><option value="0.005">0.005</option></select></label>
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Batch
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Batch
             <input id="in-batch" type="number" value="32" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Epochen
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Epochen
             <input id="in-epochs" type="number" value="200" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Val-Anteil
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Val-Anteil
             <input id="in-val" type="number" value="0.15" step="0.05" class="font-mono text-sm w-20 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
-          <label class="flex flex-col gap-1 text-[11px] font-mono text-gray-500 uppercase">Max. Vokabular
+          <label class="flex flex-col gap-1 text-xs font-mono text-gray-500 uppercase">Max. Vokabular
             <input id="in-maxvocab" type="number" value="5000" class="font-mono text-sm w-24 px-2.5 py-1.5 border border-gray-300 rounded-md"></label>
         </div>
         <div class="flex flex-wrap gap-3 items-end mt-3">
@@ -188,7 +189,7 @@
     </p>
 
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-      <label class="block text-[11px] font-mono text-gray-500 uppercase mb-1">Prompt / Text</label>
+      <label class="block text-xs font-mono text-gray-500 uppercase mb-1">Prompt / Text</label>
       <textarea id="prompt" class="w-full text-sm px-3 py-2 border border-gray-300 rounded-md h-24"
                 placeholder="z. B.: im sommer spielen die kinder" spellcheck="false" disabled>im sommer</textarea>
       <div id="inputWarn" class="hidden text-xs font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mt-2"></div>
@@ -231,7 +232,7 @@
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Top-k-Trefferquote</div>
         <table class="w-full text-sm">
-          <thead><tr class="text-left text-gray-500 font-mono text-[11px] uppercase">
+          <thead><tr class="text-left text-gray-500 font-mono text-xs uppercase">
             <th class="px-4 py-2">k</th><th class="px-4 py-2 text-right">Training</th><th class="px-4 py-2 text-right">Validierung</th></tr></thead>
           <tbody id="kTable"><tr><td class="px-4 py-3 text-gray-400" colspan="3">— noch nicht ausgewertet —</td></tr></tbody>
         </table>
@@ -251,7 +252,7 @@
         (<span class="font-mono">„Auswertung fertig · …“</span>).
       </div>
       <table class="w-full text-sm">
-        <thead><tr class="text-left text-gray-500 font-mono text-[11px] uppercase">
+        <thead><tr class="text-left text-gray-500 font-mono text-xs uppercase">
           <th class="px-4 py-2">Variante</th><th class="px-4 py-2 text-right">Top-1 Train</th><th class="px-4 py-2 text-right">Top-1 Val</th><th class="px-4 py-2 text-right">Perplexity Val</th></tr></thead>
         <tbody>
         <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">2 Layer × 100 Units <span class="text-green-700">(final)</span></td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,6 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">12,2 %</td><td class="px-4 py-2.5 text-right font-mono">18804,73</td></tr>
@@ -308,7 +309,7 @@
         Aufteilung leicht.
       </div>
       <table class="w-full text-sm">
-        <thead><tr class="text-left text-gray-500 font-mono text-[11px] uppercase">
+        <thead><tr class="text-left text-gray-500 font-mono text-xs uppercase">
           <th class="px-4 py-2">Kennzahl</th><th class="px-4 py-2 text-right">Training</th><th class="px-4 py-2 text-right">Validierung</th></tr></thead>
         <tbody>
         <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-1 (exakt richtig)</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,6 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">12,2 %</td></tr>
@@ -520,7 +521,7 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss. Und im Frühling blühe
   /* =========================================================================
      5) PLOTTING (Plotly) — grüner Auftritt
      ========================================================================= */
-  const PLOT_FONT={family:'ui-monospace, monospace',size:11,color:'#6b7280'};
+  const PLOT_FONT={family:'ui-monospace, monospace',size:12.5,color:'#6b7280'};
   const C={train:'#1d4ed8',val:'#d97706',accent:'#15803d',grid:'#e5e7eb',zero:'#d1d5db',gray:'#9ca3af'};
   const PCFG={displayModeBar:false,responsive:true};
   function baseLayout(xt,yt,extra){
@@ -631,7 +632,7 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss. Und im Frühling blühe
   }
   function statCard(label,val,sub,cls){
     return `<div class="bg-white border border-gray-200 rounded-lg p-4">
-      <div class="font-mono text-[11px] uppercase tracking-wide text-gray-500">${label}</div>
+      <div class="font-mono text-xs uppercase tracking-wide text-gray-500">${label}</div>
       <div class="font-mono text-xl font-semibold mt-1 ${cls||'text-gray-900'}">${val}</div>
       <div class="text-xs mt-1 text-gray-500">${sub||''}</div></div>`;
   }
