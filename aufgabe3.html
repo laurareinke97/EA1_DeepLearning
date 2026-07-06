@@ -61,10 +61,10 @@
 
   <h2 class="text-2xl font-bold text-primary mb-2">Aufgabe 3</h2>
   <p class="text-gray-600 max-w-3xl mb-3">
-    Sprachmodell zur Wortvorhersage (Next Word Prediction) mit einem <strong>Stacked-LSTM</strong> (TensorFlow.js).
-    Das Modell wird beim Laden im Browser auf einem deutschen Text trainiert und sagt anschließend autoregressiv
-    das jeweils nächste Wort voraus. Der Nutzer kann interaktiv Wörter übernehmen, automatisch generieren lassen
-    und die Modellgüte messen.
+    Diese Aufgabe umfasst ein Sprachmodell zur Wortvorhersage. Ein <strong>Stacked-LSTM</strong> wird mit
+    TensorFlow.js direkt im Browser auf einem deutschen Text trainiert und schlägt danach fortlaufend das nächste
+    Wort vor. Die Vorschläge lassen sich übernehmen, der Text kann automatisch weitergeschrieben werden, und
+    abschließend wird gemessen, wie gut das Modell trifft.
   </p>
   <div class="font-mono text-sm bg-white border border-gray-200 border-l-4 border-l-green-700 rounded px-4 py-3 mb-2 overflow-x-auto">
     Modell&nbsp; Embedding(|V|, d) → LSTM(100, seq) → LSTM(100) → Dense(|V|, softmax) &nbsp;,&nbsp; Loss = Cross-Entropy &nbsp;,&nbsp; Adam
@@ -72,11 +72,11 @@
   <div id="errBanner" class="hidden text-sm bg-red-50 border border-red-300 text-red-800 rounded px-4 py-3 mb-4 font-mono"></div>
 
   <details class="mt-1 mb-6 border border-gray-200 rounded-xl bg-white shadow-sm">
-    <summary class="cursor-pointer px-5 py-3 font-semibold text-green-800 select-none">❔ Kurzanleitung &amp; Hilfe</summary>
+    <summary class="cursor-pointer px-5 py-3 font-semibold text-green-800 select-none">Kurzanleitung &amp; Hilfe</summary>
     <div class="px-5 pb-5 pt-1 text-gray-700 leading-relaxed text-sm space-y-2 border-t border-gray-100">
-      <p><strong>Ablauf in drei Schritten:</strong></p>
+      <p><strong>So benutzt man die Seite:</strong></p>
       <ol class="list-decimal pl-5 space-y-1">
-        <li><strong>Training (R1–R2):</strong> Der Standardtext ist bereits geladen; beim Öffnen der Seite trainiert das Modell automatisch (Fortschritt im Overlay). Eigene Daten und Parameter änderst du im Panel <em>„Werkzeuge“</em> unter R1 und startest mit <em>„Korpus laden &amp; Modell trainieren“</em>. Der Verlust (R2) sollte fallen und in ein Plateau übergehen.</li>
+        <li><strong>Training (R1–R2):</strong> Der Standardtext ist bereits geladen; beim Öffnen der Seite trainiert das Modell automatisch (Fortschritt im Overlay). Eigene Daten und Parameter lassen sich im Panel <em>„Werkzeuge“</em> unter R1 anpassen; der Start erfolgt über <em>„Korpus laden &amp; Modell trainieren“</em>. Der Verlust (R2) sollte fallen und in ein Plateau übergehen.</li>
         <li><strong>Vorhersagen (R3):</strong> Vollständige, durch Leerzeichen getrennte Wörter eingeben. <em>Vorhersage</em> zeigt die wahrscheinlichsten nächsten Wörter mit Prozentwert (Klick hängt an), <em>Weiter</em> übernimmt das wahrscheinlichste, <em>Auto</em> erzeugt bis zu 10 Wörter (<em>Stopp</em> bricht ab), <em>Reset</em> leert Text und Vorhersagen.</li>
         <li><strong>Messen (R4):</strong> <em>Auswerten</em> berechnet Top-k-Trefferquoten und Perplexity, <em>Trainingsdaten rekonstruieren</em> zeigt, wie stark das Modell auswendig lernt (Datenschutz).</li>
       </ol>
@@ -193,11 +193,11 @@
       <div id="inputWarn" class="hidden text-xs font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mt-2"></div>
 
       <div class="flex flex-wrap gap-2.5 mt-3">
-        <button id="btn-predict" class="font-semibold text-sm px-4 py-2 rounded-md bg-green-800 text-white hover:bg-green-900 disabled:opacity-40" disabled>🔮 Vorhersage</button>
-        <button id="btn-next"    class="font-semibold text-sm px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40" disabled>➕ Weiter</button>
-        <button id="btn-auto"    class="font-semibold text-sm px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40" disabled>⚡ Auto (max. 10)</button>
-        <button id="btn-stop"    class="font-semibold text-sm px-4 py-2 rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40" disabled>⏹ Stopp</button>
-        <button id="btn-reset"   class="font-semibold text-sm px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100 disabled:opacity-40" disabled>↺ Reset</button>
+        <button id="btn-predict" class="font-semibold text-sm px-4 py-2 rounded-md bg-green-800 text-white hover:bg-green-900 disabled:opacity-40" disabled>Vorhersage</button>
+        <button id="btn-next"    class="font-semibold text-sm px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40" disabled>Weiter</button>
+        <button id="btn-auto"    class="font-semibold text-sm px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40" disabled>Auto (max. 10)</button>
+        <button id="btn-stop"    class="font-semibold text-sm px-4 py-2 rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40" disabled>Stopp</button>
+        <button id="btn-reset"   class="font-semibold text-sm px-4 py-2 rounded-md border border-gray-700 text-gray-800 hover:bg-gray-100 disabled:opacity-40" disabled>Reset</button>
       </div>
 
       <div class="mt-5">
@@ -270,19 +270,19 @@
     <div id="result-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-7"><!-- dynamisch nach Auswertung --></div>
     <div class="max-w-3xl text-gray-700 leading-relaxed">
       <p>
-        <strong>Beobachtungen.</strong> Auf dem kleinen, bewusst repetitiven Korpus fällt der Loss schnell und die
-        Top-1-Trefferquote wird hoch, weil das Modell die wenigen Muster fast auswendig lernt. Mit steigendem k
-        (5, 10, 20, 100) wächst die Trefferquote erwartungsgemäß deutlich, da das korrekte Wort dann nur noch
-        unter den plausibelsten Kandidaten liegen muss. Die Perplexity fasst dies kompakter als die Accuracy:
-        niedrige Werte bedeuten, dass das Modell dem tatsächlich folgenden Wort im Mittel hohe Wahrscheinlichkeit
-        zuweist. Ein Abstand zwischen Trainings- und Validierungs-Perplexity zeigt Overfitting, das bei so kleinen
-        Datenmengen kaum zu vermeiden ist. Zwei gestapelte LSTM-Schichten mit je 100 Units genügen hier; größere
-        Netze overfitten nur früher, ohne die Validierung zu verbessern. Die Embedding-Schicht bündelt ähnliche
-        Wörter und macht das Training effizienter als reines One-Hot am Eingang. Bei der autoregressiven
-        Generierung führt reines Greedy-Decoding schnell zu Wiederholungen, während die Auswahl aus den Top-k
-        lebendiger wirkt. Der Rekonstruktions-Test zeigt, dass das Modell Trainingssätze teils wörtlich
-        reproduziert — bei personenbezogenen Rohdaten wäre das ein Datenschutzproblem (Memorisierung). Insgesamt
-        illustriert die Anwendung den Zielkonflikt zwischen guter Anpassung (kleiner Loss) und Generalisierung.
+        Auf dem kurzen Text fällt der Loss schnell, und die Top-1-Quote wird entsprechend hoch, da sich die
+        wenigen wiederkehrenden Formulierungen leicht einprägen lassen. Mit größerem k (5, 10, 20, 100) steigt
+        die Trefferquote deutlich, weil das richtige Wort dann nur noch unter den besten Kandidaten liegen muss.
+        Die Perplexity ist als Maß aussagekräftiger als die reine Accuracy, weil sie in einer Zahl zusammenfasst,
+        wie sicher das Modell im Mittel ist. Ein Auseinanderlaufen von Trainings- und Validierungs-Perplexity
+        weist auf Overfitting hin, das sich bei so wenig Daten kaum vermeiden lässt. Zwei LSTM-Schichten mit je
+        100 Units reichen für diese Datenmenge aus; größere Netze verbessern die Validierung nicht, sondern passen
+        sich nur früher an. Die Embedding-Schicht macht das Training effizienter als ein One-Hot-Eingang. Beim
+        automatischen Weiterschreiben gerät das Modell mit dem jeweils wahrscheinlichsten Wort schnell in
+        Wiederholungen; die Auswahl aus den Top-Vorschlägen erzeugt lebendigere Texte. Der Rekonstruktions-Test
+        zeigt, dass Teile des Trainingstextes fast wörtlich wiedergegeben werden; bei personenbezogenen Daten wäre
+        das ein Datenschutzproblem. Entscheidend ist damit nicht der Trainings-Loss allein, sondern das Verhalten
+        auf ungesehenem Text.
       </p>
     </div>
   </section>
@@ -304,35 +304,39 @@
           Vorhersage-Wahrscheinlichkeiten und Top-k-Trefferquoten.</li>
         <li><strong>Tailwind CSS</strong> für Layout und Gestaltung (konsistent mit dem restlichen Auftritt).</li>
       </ul>
-      <p><strong>Technische Besonderheiten.</strong> (a) Word-Level-Tokenizer mit Kleinschreibung und Satzzeichen
-        als eigene Tokens; reservierte Indizes <code class="font-mono bg-gray-100 px-1 rounded">&lt;PAD&gt;=0</code>
-        und <code class="font-mono bg-gray-100 px-1 rounded">&lt;UNK&gt;=1</code>. (b) Sequenzen werden am Satzanfang
-        mit <code class="font-mono bg-gray-100 px-1 rounded">&lt;PAD&gt;</code> aufgefüllt, damit auch kurze Prompts
-        funktionieren. (c) Als Loss dient <code class="font-mono bg-gray-100 px-1 rounded">sparseCategoricalCrossentropy</code>:
-        mathematisch identisch zum Categorical-Cross-Entropy, benötigt aber Integer-Labels statt One-Hot und spart
-        im Browser Speicher. (d) Alle Tensor-Operationen laufen in
-        <code class="font-mono bg-gray-100 px-1 rounded">tf.tidy()</code> bzw. mit expliziter Freigabe. (e) Das
-        Modell wird beim Laden trainiert; ein Overlay zeigt den Fortschritt, danach werden alle Diagramme befüllt.</p>
+      <p><strong>Technische Besonderheiten.</strong> (a) Die Tokenisierung erfolgt auf Wort-Ebene mit
+        Kleinschreibung; Satzzeichen werden als eigene Tokens behandelt, die Indizes
+        <code class="font-mono bg-gray-100 px-1 rounded">&lt;PAD&gt;=0</code> und
+        <code class="font-mono bg-gray-100 px-1 rounded">&lt;UNK&gt;=1</code> sind reserviert. (b) Am Satzanfang
+        werden die Kontexte mit <code class="font-mono bg-gray-100 px-1 rounded">&lt;PAD&gt;</code> aufgefüllt,
+        damit auch ein kurzer Prompt bereits eine Vorhersage liefert. (c) Als Loss dient
+        <code class="font-mono bg-gray-100 px-1 rounded">sparseCategoricalCrossentropy</code>; er entspricht dem
+        Categorical-Cross-Entropy, erwartet aber ganzzahlige Labels statt One-Hot und benötigt dadurch weniger
+        Speicher im Browser. (d) Vorhersagen und Auswertungen laufen in
+        <code class="font-mono bg-gray-100 px-1 rounded">tf.tidy()</code>, sodass die Tensoren wieder freigegeben
+        werden. (e) Das Training startet direkt beim Laden; währenddessen zeigt ein Overlay den Fortschritt,
+        anschließend werden die Diagramme befüllt.</p>
 
       <h4 class="font-bold text-lg text-gray-900 mt-4">2 · Fachlich</h4>
-      <p><strong>Aufgabe.</strong> Next-Word-Prediction ist eine Multi-Class-Klassifikation über das Vokabular: aus
-        den letzten <em>n</em> Wörtern (Kontextlänge) berechnet das Modell per Softmax eine Wahrscheinlichkeits-
-        verteilung über alle möglichen Folgewörter.</p>
+      <p><strong>Aufgabe.</strong> Die Wortvorhersage ist eine Mehrklassen-Klassifikation über das Vokabular: aus
+        den letzten <em>n</em> Wörtern berechnet das Netz per Softmax, wie wahrscheinlich jedes mögliche Folgewort
+        ist.</p>
       <p><strong>Pipeline.</strong> Text → Tokenisierung → Vokabular (Wort ↔ Index) → Trainingspaare
         <code class="font-mono bg-gray-100 px-1 rounded">(Kontext → nächstes Wort)</code> per Sliding-Window →
-        Split in Training/Validierung.</p>
+        Aufteilung in Training und Validierung.</p>
       <p><strong>Modell.</strong> <code class="font-mono bg-gray-100 px-1 rounded">Embedding → LSTM(returnSequences) → LSTM → Dense(Softmax, |V|)</code>.
-        Die erste LSTM-Schicht reicht die gesamte Sequenz weiter, die letzte nur den finalen Zustand; optimiert wird
-        mit Adam auf den Cross-Entropy-Loss. Die autoregressive Generierung hängt das vorhergesagte Wort an und nutzt
-        es als neuen Kontext.</p>
-      <p><strong>Metriken.</strong> <em>Top-k-Accuracy</em> = Anteil der Fälle, in denen das wahre Folgewort unter den
-        k wahrscheinlichsten liegt (k = 1, 5, 10, 20, 100). <em>Perplexity</em> = exp(mittlerer Cross-Entropy);
-        niedriger ist besser.</p>
-      <p><strong>Datenschutz (Frage 3).</strong> Da das Modell Trainingssätze teils wörtlich rekonstruieren kann
-        (Memorisierung), sind bei personenbezogenen Trainingsdaten Rückschlüsse auf Einzelpersonen möglich — ein
-        reales Datenschutzrisiko, dem u. a. mit Datenminimierung, Regularisierung oder Differential Privacy begegnet
-        wird. <strong>Quellen:</strong> Mikolov et al. „Recurrent neural network based language model“;
-        TensorFlow.js-Demo „lstm-text-generation“; Grundlagen Cross-Entropy &amp; Perplexity.</p>
+        Die erste LSTM-Schicht gibt die ganze Sequenz weiter, die zweite nur ihren Endzustand; trainiert wird mit
+        Adam auf den Cross-Entropy-Loss. Für die Generierung wird das vorhergesagte Wort angehängt und als neuer
+        Kontext verwendet.</p>
+      <p><strong>Metriken.</strong> Die <em>Top-k-Trefferquote</em> misst, wie oft das echte Folgewort unter den k
+        wahrscheinlichsten liegt (k = 1, 5, 10, 20, 100). Die <em>Perplexity</em> ist exp(mittlerer Cross-Entropy);
+        je kleiner, desto besser.</p>
+      <p><strong>Datenschutz (Frage 3).</strong> Da das Modell Trainingssätze teilweise wörtlich wiedergibt, lassen
+        sich aus personenbezogenen Trainingsdaten Rückschlüsse auf einzelne Personen ziehen. Das ist ein reales
+        Risiko, dem etwa mit weniger bzw. aggregierten Daten, Regularisierung oder Differential Privacy begegnet
+        wird. <strong>Quellen:</strong> Mikolov et al., „Recurrent neural network based language model“; die
+        TensorFlow.js-Demo „lstm-text-generation“; sowie die Grundlagen zu Cross-Entropy und Perplexity aus der
+        Aufgabenstellung.</p>
     </div>
   </section>
 
@@ -796,7 +800,7 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss, und alle freuen sich sc
     $('file-model').onchange=async ev=>{ const files=[...ev.target.files]; const json=files.find(f=>f.name.endsWith('.json')); const bin=files.find(f=>f.name.endsWith('.bin'));
       if(!json||!bin){ log('Bitte .json UND .weights.bin auswählen.'); return; }
       try{ if(model)model.dispose(); model=await tf.loadLayersModel(tf.io.browserFiles([json,bin]));
-        model.compile({optimizer:tf.train.adam(0.001),loss:'sparseCategoricalCrossentropy',metrics:['accuracy']});
+        model.compile({optimizer:tf.train.adam(0.001),loss:'sparseCategoricalCrossentropy'});
         log('Modell geladen. Achtung: passendes Vokabular/Kontextlänge muss zum aktuellen Korpus passen.'); enableInteraction(true);
       }catch(e){ log('Modell-Ladefehler: '+e.message); } };
 
