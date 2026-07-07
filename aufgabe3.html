@@ -226,6 +226,33 @@
       <span class="inline-flex items-center gap-2"><i class="w-3 h-3 rounded-full inline-block" style="background:#d97706"></i>Validierung</span>
     </div>
 
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-5">
+      <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Notierte Resultate — Beispiel-Lauf</div>
+      <div class="px-4 pt-1 pb-2 text-xs text-gray-500 leading-relaxed">
+        Aufbau: 2×LSTM(100), Embedding 48, Kontextlänge 5; Adam, Lernrate 0.01, Batch-Size 32, 200 Epochen.
+        Korpus: 547 Tokens, Vokabular 203, 465 Trainings- / 82 Validierungs-Sequenzen. Die Werte stammen aus einem
+        konkreten Lauf; über „Auswerten“ werden sie live neu berechnet und schwanken durch die zufällige Aufteilung
+        leicht.
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr class="text-left text-gray-500 font-mono text-xs uppercase">
+          <th class="px-4 py-2">Kennzahl</th><th class="px-4 py-2 text-right">Training</th><th class="px-4 py-2 text-right">Validierung</th></tr></thead>
+        <tbody>
+        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-1 (exakt richtig)</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,6 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">12,2 %</td></tr>
+        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-5</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,8 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">29,3 %</td></tr>
+        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-10</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,8 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">37,8 %</td></tr>
+        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-20</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,8 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">46,3 %</td></tr>
+        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-100</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">100,0 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">63,4 %</td></tr>
+        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Perplexity</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">1,05</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">18804,73</td></tr>
+        </tbody>
+      </table>
+      <div class="px-4 py-3 text-xs text-gray-500 border-t border-gray-100 leading-relaxed">
+        Interpretation: Die hohe Trainings- gegenüber der niedrigen Validierungs-Trefferquote und die große Differenz
+        der Perplexity (1,05 gegenüber 18804,73) zeigen deutliches Overfitting auf den kurzen Text; mit größerem k
+        steigt die Trefferquote deutlich an.
+      </div>
+    </div>
+
     <div id="evalMetrics" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"><!-- dynamisch --></div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -300,34 +327,6 @@
       <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">§</span>
       <h3 class="text-xl font-bold text-gray-900">Diskussion</h3>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-      <div class="px-4 pt-3 font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">Notierte Resultate — Beispiel-Lauf</div>
-      <div class="px-4 pt-1 pb-2 text-xs text-gray-500 leading-relaxed">
-        Aufbau: 2×LSTM(100), Embedding 48, Kontextlänge 5; Adam, Lernrate 0.01, Batch-Size 32, 200 Epochen.
-        Korpus: 547 Tokens, Vokabular 203, 465 Trainings- / 82 Validierungs-Sequenzen. Die Werte stammen aus einem
-        konkreten Lauf; über „Auswerten“ in R4 werden sie live neu berechnet und schwanken durch die zufällige
-        Aufteilung leicht.
-      </div>
-      <table class="w-full text-sm">
-        <thead><tr class="text-left text-gray-500 font-mono text-xs uppercase">
-          <th class="px-4 py-2">Kennzahl</th><th class="px-4 py-2 text-right">Training</th><th class="px-4 py-2 text-right">Validierung</th></tr></thead>
-        <tbody>
-        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-1 (exakt richtig)</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,6 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">12,2 %</td></tr>
-        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-5</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,8 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">29,3 %</td></tr>
-        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-10</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,8 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">37,8 %</td></tr>
-        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-20</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">99,8 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">46,3 %</td></tr>
-        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Top-100</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">100,0 %</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">63,4 %</td></tr>
-        <tr class="border-t border-gray-100"><td class="px-4 py-2.5 font-mono">Perplexity</td><td class="px-4 py-2.5 text-right font-mono text-blue-700">1,05</td><td class="px-4 py-2.5 text-right font-mono text-amber-700">18804,73</td></tr>
-        </tbody>
-      </table>
-      <div class="px-4 py-3 text-xs text-gray-500 border-t border-gray-100 leading-relaxed">
-        Rekonstruktions-Test (Frage 3): 2 von 40 Wörtern stimmen überein (5,0 %) → geringe wörtliche Memorisierung.
-        Interpretation: Die hohe Trainings- gegenüber der niedrigen Validierungs-Trefferquote und die große Differenz
-        der Perplexity (1,05 gegenüber 18804,73) zeigen deutliches Overfitting auf den kurzen Text; mit größerem k
-        steigt die Trefferquote deutlich an.
-      </div>
-    </div>
-    <div id="result-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-7"><!-- dynamisch nach Auswertung --></div>
     <div class="text-gray-700 leading-relaxed">
       <p>
         Auf dem kurzen Text fällt der Loss schnell, und die Top-1-Quote wird entsprechend hoch, da sich die
@@ -777,14 +776,6 @@ So vergeht ein ruhiges Jahr in dem kleinen Ort am Fluss. Und im Frühling blühe
     const data=[{x:labels,y:tr.ks.map(k=>+(tr.acc[k]*100).toFixed(1)),type:'bar',name:'Training',marker:{color:C.train}}];
     if(va) data.push({x:labels,y:va.ks.map(k=>+(va.acc[k]*100).toFixed(1)),type:'bar',name:'Validierung',marker:{color:C.val}});
     Plotly.newPlot('p-topk',data,baseLayout('k','Trefferquote (%)',{barmode:'group',showlegend:true,legend:{orientation:'h',y:1.15},yaxis:{title:'Trefferquote (%)',range:[0,100],gridcolor:C.grid,zerolinecolor:C.zero}}),PCFG);
-
-    // Diskussions-Statistik
-    let ds=statCard('Top-1 Train/Val',(tr.acc[1]*100).toFixed(0)+' % / '+(va?(va.acc[1]*100).toFixed(0):'–')+' %','k = 1','text-gray-900');
-    ds+=statCard('Top-5 Train/Val',(tr.acc[5]*100).toFixed(0)+' % / '+(va?(va.acc[5]*100).toFixed(0):'–')+' %','k = 5','text-gray-900');
-    ds+=statCard('Perplexity Train/Val',tr.ppl.toFixed(1)+' / '+(va?va.ppl.toFixed(1):'–'),'Sprachmodell-Güte','text-gray-900');
-    const gap=va?(va.ppl/tr.ppl):null;
-    ds+=statCard('Overfitting-Indikator',gap?gap.toFixed(2)+'×':'—','Val-PPL / Train-PPL',gap&&gap>1.5?'text-amber-700':'text-green-700');
-    $('result-stats').innerHTML=ds;
 
     log('Auswertung fertig · Train-PPL '+tr.ppl.toFixed(2)+(va?' · Val-PPL '+va.ppl.toFixed(2):'')+' · Top-1 '+(tr.acc[1]*100).toFixed(1)+' %');
   }
