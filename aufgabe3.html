@@ -61,7 +61,7 @@
 <main class="max-w-5xl mx-auto p-6">
 
   <h2 class="text-2xl font-bold text-primary mb-2">Aufgabe 3</h2>
-  <p class="text-gray-600 max-w-3xl mb-3">
+  <p class="text-gray-600 mb-3">
     Diese Aufgabe umfasst ein Sprachmodell zur Wortvorhersage. Ein <strong>Stacked-LSTM</strong> wird mit
     TensorFlow.js direkt im Browser auf einem deutschen Text trainiert und schlägt danach fortlaufend das nächste
     Wort vor. Die Vorschläge lassen sich übernehmen, der Text kann automatisch weitergeschrieben werden, und
@@ -91,7 +91,7 @@
       <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R1</span>
       <h3 class="text-xl font-bold text-gray-900">Die Daten &amp; das Vokabular</h3>
     </div>
-    <p class="text-gray-600 max-w-3xl mb-4">
+    <p class="text-gray-600 mb-4">
       Der Text wird tokenisiert (Wort-Ebene, Kleinschreibung, Satzzeichen als eigene Tokens). Aus dem Vokabular
       entstehen per Sliding-Window Trainingspaare <span class="font-mono">(n Kontext-Wörter → nächstes Wort)</span>,
       die zufällig in Trainings- und Validierungsdaten aufgeteilt werden.
@@ -145,7 +145,7 @@
       <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R2</span>
       <h3 class="text-xl font-bold text-gray-900">Training &amp; Verlust</h3>
     </div>
-    <p class="text-gray-600 max-w-3xl mb-4">
+    <p class="text-gray-600 mb-4">
       Optimiert wird der Cross-Entropy-Loss mit Adam. Der Verlust sollte fallen und in ein Plateau übergehen;
       steigt der Validierungs-Loss wieder, während der Trainings-Loss weiter sinkt, deutet das auf Overfitting hin.
     </p>
@@ -180,7 +180,7 @@
       <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R3</span>
       <h3 class="text-xl font-bold text-gray-900">Interaktion — Wortvorhersage</h3>
     </div>
-    <p class="text-gray-600 max-w-3xl mb-4">
+    <p class="text-gray-600 mb-4">
       Vollständige, durch Leerzeichen getrennte Wörter eingeben. <strong>Vorhersage</strong> zeigt die
       wahrscheinlichsten nächsten Wörter (Klick hängt an), <strong>Weiter</strong> übernimmt das wahrscheinlichste,
       <strong>Auto</strong> erzeugt bis zu 10 Wörter (mit <strong>Stopp</strong> abbrechbar), <strong>Reset</strong>
@@ -217,7 +217,7 @@
       <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">R4</span>
       <h3 class="text-xl font-bold text-gray-900">Experimente &amp; Resultate</h3>
     </div>
-    <p class="text-gray-600 max-w-3xl mb-4">
+    <p class="text-gray-600 mb-4">
       Trefferquote Top-k (k = 1, 5, 10, 20, 100) und Perplexity auf Trainings- und Validierungsdaten, sowie ein
       Rekonstruktions-Test zur Frage, ob das Modell die Trainingsdaten „auswendig“ lernt (Datenschutz-Aspekt).
     </p>
@@ -328,7 +328,7 @@
       </div>
     </div>
     <div id="result-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-7"><!-- dynamisch nach Auswertung --></div>
-    <div class="max-w-3xl text-gray-700 leading-relaxed">
+    <div class="text-gray-700 leading-relaxed">
       <p>
         Auf dem kurzen Text fällt der Loss schnell, und die Top-1-Quote wird entsprechend hoch, da sich die
         wenigen wiederkehrenden Formulierungen leicht einprägen lassen. Mit größerem k (5, 10, 20, 100) steigt
@@ -353,7 +353,7 @@
       <span class="font-mono font-semibold text-sm text-white bg-gray-800 px-2.5 py-0.5 rounded">⚙</span>
       <h3 class="text-xl font-bold text-gray-900">Dokumentation</h3>
     </div>
-    <div class="max-w-3xl text-gray-700 leading-relaxed space-y-3">
+    <div class="text-gray-700 leading-relaxed space-y-3">
       <h4 class="font-bold text-lg text-gray-900 mt-2">1 · Technisch</h4>
       <ul class="list-disc pl-5 space-y-1">
         <li><strong>TensorFlow.js (4.22):</strong> definiert das LSTM-Sprachmodell, Training (Adam, Cross-Entropy)
